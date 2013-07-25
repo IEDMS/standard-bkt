@@ -18,7 +18,6 @@
 		71A39CB3179DB063000F9610 /* utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D234AA17540AE7006985EB /* utils.cpp */; };
 		71A39CB4179DB071000F9610 /* inputconvert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71A39C9F179DAAC6000F9610 /* inputconvert.cpp */; };
 		71A39CB5179DB074000F9610 /* InputUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D4587D17972C0400356EE4 /* InputUtil.cpp */; };
-		71AF7DEF176F6C2E000C7E96 /* HMMProblemNew.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBE1877915531289001CD83C /* HMMProblemNew.cpp */; };
 		71AF7DFD176F6D4D000C7E96 /* trainhmm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D234A717540AB6006985EB /* trainhmm.cpp */; };
 		71AF7E00176F6D73000C7E96 /* utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D234AA17540AE7006985EB /* utils.cpp */; };
 		71AF7E01176F6D77000C7E96 /* StripedArray.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB5D902A158B7C8C007ECB58 /* StripedArray.cpp */; };
@@ -26,7 +25,6 @@
 		71D4588F17981E6500356EE4 /* InputUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D4587D17972C0400356EE4 /* InputUtil.cpp */; };
 		71D4589017981E6600356EE4 /* InputUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D4587D17972C0400356EE4 /* InputUtil.cpp */; };
 		EB256605167FBADE00E9082A /* utilsNew.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB7C55331552F7EC005DC9FC /* utilsNew.cpp */; };
-		EB256606167FBAE100E9082A /* HMMProblemNew.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBE1877915531289001CD83C /* HMMProblemNew.cpp */; };
 		EB256607167FBF4000E9082A /* FitBit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB994B9216288D0C0098D5ED /* FitBit.cpp */; };
 		EB5D902B158B7C8C007ECB58 /* StripedArray.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB5D902A158B7C8C007ECB58 /* StripedArray.cpp */; };
 		EB6936FC15EC398900A919B3 /* StripedArray.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB5D902A158B7C8C007ECB58 /* StripedArray.cpp */; };
@@ -128,8 +126,6 @@
 		EBD201DE15F8DD3F003E97BF /* HMMProblemPiAGK.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblemPiAGK.cpp; sourceTree = "<group>"; };
 		EBD201DF15F8DD3F003E97BF /* HMMProblemPiAGK.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblemPiAGK.h; sourceTree = "<group>"; };
 		EBD201E515F93481003E97BF /* sselog */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = sselog; sourceTree = BUILT_PRODUCTS_DIR; };
-		EBE1877815531289001CD83C /* HMMProblemNew.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblemNew.h; sourceTree = "<group>"; };
-		EBE1877915531289001CD83C /* HMMProblemNew.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblemNew.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -202,8 +198,6 @@
 				71D4587D17972C0400356EE4 /* InputUtil.cpp */,
 				71A39C9F179DAAC6000F9610 /* inputconvert.cpp */,
 				EBBAF0BA160772210032B156 /* liblinear */,
-				EBE1877815531289001CD83C /* HMMProblemNew.h */,
-				EBE1877915531289001CD83C /* HMMProblemNew.cpp */,
 				71D234A617540A80006985EB /* HMMProblem.h */,
 				71D234A417540A7C006985EB /* HMMProblem.cpp */,
 				EBADDCA316021E5900C6865E /* HMMProblemKT.h */,
@@ -460,7 +454,6 @@
 			files = (
 				EB6936FC15EC398900A919B3 /* StripedArray.cpp in Sources */,
 				EB256605167FBADE00E9082A /* utilsNew.cpp in Sources */,
-				EB256606167FBAE100E9082A /* HMMProblemNew.cpp in Sources */,
 				EB256607167FBF4000E9082A /* FitBit.cpp in Sources */,
 				7186A257178A19A70031A73E /* predicthmm.cpp in Sources */,
 			);
@@ -481,7 +474,6 @@
 				EBBAF0CC160772210032B156 /* linear.cpp in Sources */,
 				EBBAF0CD160772210032B156 /* tron.cpp in Sources */,
 				EB994B9416288D0D0098D5ED /* FitBit.cpp in Sources */,
-				71AF7DEF176F6C2E000C7E96 /* HMMProblemNew.cpp in Sources */,
 				71D4589017981E6600356EE4 /* InputUtil.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -779,6 +771,7 @@
 				71A39CB1179DB04F000F9610 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		71AF7DFA176F6C3F000C7E96 /* Build configuration list for PBXNativeTarget "trainhmmOld" */ = {
 			isa = XCConfigurationList;
