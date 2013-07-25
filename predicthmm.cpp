@@ -18,6 +18,7 @@
 #include <list>
 #include "utils.h"
 #include "HMMProblem.h"
+#include "InputUtil.h"
 using namespace std;
 
 #define COLUMNS 4
@@ -54,7 +55,11 @@ int main (int argc, char ** argv) {
     param.predictions = 1; // force it on, since we, you know, predictinng :)
 	read_model(model_file);
     
-	read_predict_data(input_file);
+    if(param.binaryinput==0) {
+        InputUtil::readTxt(input_file, &param);
+    } else {
+        InputUtil::readBin(input_file, &param);
+    }
 	
 	if(param.quiet == 0)
 		printf("input read, nO=%d, nG=%d, nK=%d\n",param.nO, param.nG, param.nK);
@@ -90,7 +95,6 @@ void exit_with_help() {
 		   "Usage: trainhmm [options] input_file [[output_file] predicted_response_file]\n"
 		   "options:\n"
 		   "(-s) : structure.solver[.solver setting], structures: 1-by skill, 2-by user,\n"
-           "       3-Pi by skill, A,B-by user, 4-Pi by skill and user, A,B-by user,\n"
            "       5-A by skill and user, Pi,B by skill, 6-Pi,A by skill and user, B by skill;\n"
            "       solvers: 1-Baum-Welch, 2-Gradient Descent, 3-Conjugate Gradient Descent;\n"
            "       Conjugate Gradient Descent has 3 setings: 1-Polak-Ribiere, 2-Fletcher–Reeves,\n"
@@ -123,6 +127,7 @@ void exit_with_help() {
            "     -v and -m params.\n"
 		   "-d : multi-skill per observation delimiter 0-sinle skill per observation (default), [delimiter character].\n"
            "     For example '-d ~'.\n"
+		   "-b : treat input file as binary input file (lookup format specifications in help)\n"
 		   );
 	exit(1);
 }
@@ -171,6 +176,9 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *model_f
             case  'd':
 				param.multiskill = argv[i][0]; // just grab first character (later, maybe several)
                 break;
+			case 'b':
+                param.binaryinput = atoi( strtok(argv[i],"\t\n\r"));
+                break;
 			default:
 				fprintf(stderr,"unknown option: -%c\n", argv[i-1][1]);
 				exit_with_help();
@@ -201,182 +209,182 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *model_f
 	}
 }
 
-void read_predict_data(const char *filename) {
-	FILE *fid = fopen(filename,"r");
-    //	global_N = 0;
-    //	global_predict_N = 0;
-	int number_columns = 0;
-	max_line_length = 1024;
-	char *col;
-	if(fid == NULL)
-	{
-		fprintf(stderr,"Can't open input file %s\n",filename);
-		exit(1);
-	}
-    
-	// grab memory and read all data
-	line = (char *)malloc(max_line_length);// Malloc(char,max_line_length);
-	param.dat_obs   = new StripedArray<NPAR>();//Malloc(NPAR, global_N);
-	param.dat_group = new StripedArray<NCAT>();//Malloc(NCAT, global_N);
-    if(param.multiskill==0)
-        param.dat_skill = new StripedArray<NCAT>();//Malloc(NCAT, global_N);
-    else
-        param.dat_multiskill = new StripedArray< NCAT* >(true);
-    if(param.time)
-        param.dat_obs   = new StripedArray<NPAR>();//Malloc(NPAR, global_N);
-	
-	string s_obs, s_group, s_step, s_skill;
-	map<string,NCAT>::iterator it_k;
-	map<string,NCAT>::iterator it_g;
-    NPAR obs = 0;
-    int time = 0;
-    
-	bool wrong_no_columns = false;
-    param.N = 0;
-    param.N_null = 0;
-	while( readline(fid)!=NULL && !wrong_no_columns) {
-		number_columns = 0;
-        
-		// Observation
-		col = strtok(line,"\t\n\r");
-		if(col == NULL) {
-			wrong_no_columns = true;
-			break;
-		}
-		number_columns++;
-        s_obs = string( col );
-		if( (s_obs.empty() || ( s_obs.size()==1 && (s_obs[0]=='.' || s_obs[0]==' '/**/) ) ) ) {
-			// is emply as labelled!
-			obs = -1;//dat_obs[t] = -1;
-			global_predict_N++;
-		} else {
-			obs = atoi( s_obs.c_str() )-1;
-			if(obs==NPAR_MAX) {
-				fprintf(stderr,"Number of observtions exceeds allowed maximum of %d.\n",NPAR_MAX);
-				exit(1);
-			}
-			if(obs>(param.nO-1)) {
-				fprintf(stderr,"Number of observtions exceeds preset of %d.\n",param.nO);
-				exit(1);
-			}
-		}
-        param.dat_obs->add(obs);
-        
-		// Group
-		col = strtok(NULL,"\t\n\r");
-		if(col == NULL) {
-			wrong_no_columns = true;
-			break;
-		}
-		number_columns++;
-		s_group = string( col );
-		it_g = param.map_group_fwd->find(s_group);
-		if( it_g==param.map_group_fwd->end() ) { // not found
-            //			param.dat_group->add(NCAT(-1));
-			if(param.map_group_fwd->size()==NCAT_MAX) {
-				fprintf(stderr,"Number of unique groups exceeds allowed maximum of %d.\n",NCAT_MAX);
-				exit(1);
-			}
-			NCAT newg = param.map_group_fwd->size();
-			param.dat_group->add(newg); //[t] = param.map_group_fwd.size();
-			param.map_group_fwd->insert(pair<string,NCAT>(s_group, newg));
-			param.map_group_bwd->insert(pair<NCAT,string>(newg, s_group));
-		}
-		else                                     // found
-			param.dat_group->add(it_g->second);
-        
-		// Step
-		col = strtok(NULL,"\t\n\r");
-		if(col == NULL) {
-			wrong_no_columns = true;
-			break;
-		}
-		number_columns++;
-		s_step = string( col );
-        
-		// Skill
-		col = strtok(NULL,"\t\n\r");
-		if(col == NULL) {
-			wrong_no_columns = true;
-			break;
-		}
-		number_columns++;
-		s_skill = string( col );
-		if( (s_skill.empty() || ( s_skill.size()==1 && (s_skill[0]=='.' || s_skill[0]==' ') ) ) ) { // null skill
-            param.N_null++;
-            if(param.multiskill == 0) {
-                param.dat_skill->add((NCAT)-1); // [t] = -1;
-            }
-            else {
-                NCAT* a_skills = Malloc(NCAT, 2);
-                a_skills[0] = 1; // count
-                a_skills[1] = -1; // value
-                param.dat_multiskill->add(a_skills);
-            }
-		}
-		else {
-            // multiskill
-            if(param.multiskill != 0) {
-                list<NCAT> a_skills;//
-                char* a_kc;
-                a_kc  = strtok(col,"~\n\r");
-                string s_kc;
-                while(a_kc != NULL) {
-                    s_kc = string(a_kc);
-                    // adding vvvv
-                    it_k = param.map_skill_fwd->find(s_kc);
-                    if( it_k==param.map_skill_fwd->end() ){         // not found
-                        a_skills.insert(a_skills.end(), (NCAT)-1);
-                        param.N_null++;
-                    }
-                    else                                            // found
-                        a_skills.insert(a_skills.end(), it_k->second);
-                    // adding ^^^^
-                    a_kc  = strtok(NULL,"~\n\r");
-                }
-                NCAT *b_skills = Malloc(NCAT, a_skills.size()+1);
-                b_skills[0] = a_skills.size();
-                int count = 0;
-                for(list<NCAT>::iterator it=a_skills.begin(); it!=a_skills.end(); it++)
-                    b_skills[++count] = *it;
-                param.dat_multiskill->add(b_skills);
-                // multi skill
-            } else {
-                // single skill
-                it_k = param.map_skill_fwd->find(s_skill);
-                if( it_k==param.map_skill_fwd->end() ){ // not found
-                    param.dat_skill->add( (NCAT)-1 );
-                    param.N_null++;
-                }
-                else                                    // found
-                    param.dat_skill->add(it_k->second);
-            } // single skill
-            
-            // Time
-            if(param.time) {
-                col = strtok(line,"\t\n\r");
-                if(col == NULL) {
-                    wrong_no_columns = true;
-                    break;
-                }
-                number_columns++;
-                time = atoi( col );
-                if( time<=0 ) {
-                    fprintf(stderr,"Time cannot be negative or zero (line %d).\n",param.N+1);
-                    exit(1);
-                }
-                param.dat_time->add(time);
-            }// time
-		}
-		// count lines
-		param.N++;	// increase line count
-        //        fprintf(stdout,"Line %d\n",param.N);
-	}// reading loop
-    
-	free(line);
-	fclose(fid);
-}
-
+//void read_predict_data(const char *filename) {
+//	FILE *fid = fopen(filename,"r");
+//    //	global_N = 0;
+//    //	global_predict_N = 0;
+//	int number_columns = 0;
+//	max_line_length = 1024;
+//	char *col;
+//	if(fid == NULL)
+//	{
+//		fprintf(stderr,"Can't open input file %s\n",filename);
+//		exit(1);
+//	}
+//    
+//	// grab memory and read all data
+//	line = (char *)malloc(max_line_length);// Malloc(char,max_line_length);
+//	param.dat_obs   = new StripedArray<NPAR>();//Malloc(NPAR, global_N);
+//	param.dat_group = new StripedArray<NCAT>();//Malloc(NCAT, global_N);
+//    if(param.multiskill==0)
+//        param.dat_skill = new StripedArray<NCAT>();//Malloc(NCAT, global_N);
+//    else
+//        param.dat_multiskill = new StripedArray< NCAT* >(true);
+//    if(param.time)
+//        param.dat_obs   = new StripedArray<NPAR>();//Malloc(NPAR, global_N);
+//	
+//	string s_obs, s_group, s_step, s_skill;
+//	map<string,NCAT>::iterator it_k;
+//	map<string,NCAT>::iterator it_g;
+//    NPAR obs = 0;
+//    int time = 0;
+//    
+//	bool wrong_no_columns = false;
+//    param.N = 0;
+//    param.N_null = 0;
+//	while( readline(fid)!=NULL && !wrong_no_columns) {
+//		number_columns = 0;
+//        
+//		// Observation
+//		col = strtok(line,"\t\n\r");
+//		if(col == NULL) {
+//			wrong_no_columns = true;
+//			break;
+//		}
+//		number_columns++;
+//        s_obs = string( col );
+//		if( (s_obs.empty() || ( s_obs.size()==1 && (s_obs[0]=='.' || s_obs[0]==' '/**/) ) ) ) {
+//			// is emply as labelled!
+//			obs = -1;//dat_obs[t] = -1;
+//			global_predict_N++;
+//		} else {
+//			obs = atoi( s_obs.c_str() )-1;
+//			if(obs==NPAR_MAX) {
+//				fprintf(stderr,"Number of observtions exceeds allowed maximum of %d.\n",NPAR_MAX);
+//				exit(1);
+//			}
+//			if(obs>(param.nO-1)) {
+//				fprintf(stderr,"Number of observtions exceeds preset of %d.\n",param.nO);
+//				exit(1);
+//			}
+//		}
+//        param.dat_obs->add(obs);
+//        
+//		// Group
+//		col = strtok(NULL,"\t\n\r");
+//		if(col == NULL) {
+//			wrong_no_columns = true;
+//			break;
+//		}
+//		number_columns++;
+//		s_group = string( col );
+//		it_g = param.map_group_fwd->find(s_group);
+//		if( it_g==param.map_group_fwd->end() ) { // not found
+//            //			param.dat_group->add(NCAT(-1));
+//			if(param.map_group_fwd->size()==NCAT_MAX) {
+//				fprintf(stderr,"Number of unique groups exceeds allowed maximum of %d.\n",NCAT_MAX);
+//				exit(1);
+//			}
+//			NCAT newg = param.map_group_fwd->size();
+//			param.dat_group->add(newg); //[t] = param.map_group_fwd.size();
+//			param.map_group_fwd->insert(pair<string,NCAT>(s_group, newg));
+//			param.map_group_bwd->insert(pair<NCAT,string>(newg, s_group));
+//		}
+//		else                                     // found
+//			param.dat_group->add(it_g->second);
+//        
+//		// Step
+//		col = strtok(NULL,"\t\n\r");
+//		if(col == NULL) {
+//			wrong_no_columns = true;
+//			break;
+//		}
+//		number_columns++;
+//		s_step = string( col );
+//        
+//		// Skill
+//		col = strtok(NULL,"\t\n\r");
+//		if(col == NULL) {
+//			wrong_no_columns = true;
+//			break;
+//		}
+//		number_columns++;
+//		s_skill = string( col );
+//		if( (s_skill.empty() || ( s_skill.size()==1 && (s_skill[0]=='.' || s_skill[0]==' ') ) ) ) { // null skill
+//            param.N_null++;
+//            if(param.multiskill == 0) {
+//                param.dat_skill->add((NCAT)-1); // [t] = -1;
+//            }
+//            else {
+//                NCAT* a_skills = Malloc(NCAT, 2);
+//                a_skills[0] = 1; // count
+//                a_skills[1] = -1; // value
+//                param.dat_multiskill->add(a_skills);
+//            }
+//		}
+//		else {
+//            // multiskill
+//            if(param.multiskill != 0) {
+//                list<NCAT> a_skills;//
+//                char* a_kc;
+//                a_kc  = strtok(col,"~\n\r");
+//                string s_kc;
+//                while(a_kc != NULL) {
+//                    s_kc = string(a_kc);
+//                    // adding vvvv
+//                    it_k = param.map_skill_fwd->find(s_kc);
+//                    if( it_k==param.map_skill_fwd->end() ){         // not found
+//                        a_skills.insert(a_skills.end(), (NCAT)-1);
+//                        param.N_null++;
+//                    }
+//                    else                                            // found
+//                        a_skills.insert(a_skills.end(), it_k->second);
+//                    // adding ^^^^
+//                    a_kc  = strtok(NULL,"~\n\r");
+//                }
+//                NCAT *b_skills = Malloc(NCAT, a_skills.size()+1);
+//                b_skills[0] = a_skills.size();
+//                int count = 0;
+//                for(list<NCAT>::iterator it=a_skills.begin(); it!=a_skills.end(); it++)
+//                    b_skills[++count] = *it;
+//                param.dat_multiskill->add(b_skills);
+//                // multi skill
+//            } else {
+//                // single skill
+//                it_k = param.map_skill_fwd->find(s_skill);
+//                if( it_k==param.map_skill_fwd->end() ){ // not found
+//                    param.dat_skill->add( (NCAT)-1 );
+//                    param.N_null++;
+//                }
+//                else                                    // found
+//                    param.dat_skill->add(it_k->second);
+//            } // single skill
+//            
+//            // Time
+//            if(param.time) {
+//                col = strtok(line,"\t\n\r");
+//                if(col == NULL) {
+//                    wrong_no_columns = true;
+//                    break;
+//                }
+//                number_columns++;
+//                time = atoi( col );
+//                if( time<=0 ) {
+//                    fprintf(stderr,"Time cannot be negative or zero (line %d).\n",param.N+1);
+//                    exit(1);
+//                }
+//                param.dat_time->add(time);
+//            }// time
+//		}
+//		// count lines
+//		param.N++;	// increase line count
+//        //        fprintf(stdout,"Line %d\n",param.N);
+//	}// reading loop
+//    
+//	free(line);
+//	fclose(fid);
+//}
+//
 static char* readline(FILE *fid) {
 	int length = 0;
 	
