@@ -8,11 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		71035516178A148A00EA034B /* HMMProblem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D234A417540A7C006985EB /* HMMProblem.cpp */; };
-		71035518178A149700EA034B /* HMMProblemPiGK.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBD201D615F103CD003E97BF /* HMMProblemPiGK.cpp */; };
-		71035519178A149B00EA034B /* HMMProblemAGK.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBADDC9F160211F000C6865E /* HMMProblemAGK.cpp */; };
-		7103551A178A149E00EA034B /* HMMProblemPiAGK.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBD201DE15F8DD3F003E97BF /* HMMProblemPiAGK.cpp */; };
-		7103551B178A14A100EA034B /* HMMProblemPiABGK.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71F5217C173D4583008EE451 /* HMMProblemPiABGK.cpp */; };
-		717B9D511791E1D3004FBE94 /* HMMProblemAGKi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 717B9D501791E1D3004FBE94 /* HMMProblemAGKi.cpp */; };
 		7186A257178A19A70031A73E /* predicthmm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB32E9C7157F9D2E002F3FFB /* predicthmm.cpp */; };
 		71A39CB2179DB05F000F9610 /* StripedArray.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB5D902A158B7C8C007ECB58 /* StripedArray.cpp */; };
 		71A39CB3179DB063000F9610 /* utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D234AA17540AE7006985EB /* utils.cpp */; };
@@ -24,13 +19,10 @@
 		71AF7E02176F6D7A000C7E96 /* FitBit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB994B9216288D0C0098D5ED /* FitBit.cpp */; };
 		71D4588F17981E6500356EE4 /* InputUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D4587D17972C0400356EE4 /* InputUtil.cpp */; };
 		71D4589017981E6600356EE4 /* InputUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D4587D17972C0400356EE4 /* InputUtil.cpp */; };
-		EB256605167FBADE00E9082A /* utilsNew.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB7C55331552F7EC005DC9FC /* utilsNew.cpp */; };
 		EB256607167FBF4000E9082A /* FitBit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB994B9216288D0C0098D5ED /* FitBit.cpp */; };
 		EB5D902B158B7C8C007ECB58 /* StripedArray.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB5D902A158B7C8C007ECB58 /* StripedArray.cpp */; };
 		EB6936FC15EC398900A919B3 /* StripedArray.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB5D902A158B7C8C007ECB58 /* StripedArray.cpp */; };
 		EB994B9416288D0D0098D5ED /* FitBit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB994B9216288D0C0098D5ED /* FitBit.cpp */; };
-		EB9B4C2B155970A400E21593 /* trainhmmNew.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB9B4BE315596EEE00E21593 /* trainhmmNew.cpp */; };
-		EB9B4C2D155970A400E21593 /* utilsNew.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB7C55331552F7EC005DC9FC /* utilsNew.cpp */; };
 		EBBAF0C7160772210032B156 /* daxpy.c in Sources */ = {isa = PBXBuildFile; fileRef = EBBAF0BE160772210032B156 /* daxpy.c */; };
 		EBBAF0C8160772210032B156 /* ddot.c in Sources */ = {isa = PBXBuildFile; fileRef = EBBAF0BF160772210032B156 /* ddot.c */; };
 		EBBAF0C9160772210032B156 /* dnrm2.c in Sources */ = {isa = PBXBuildFile; fileRef = EBBAF0C0160772210032B156 /* dnrm2.c */; };
@@ -72,8 +64,6 @@
 
 /* Begin PBXFileReference section */
 		08FB7796FE84155DC02AAC07 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		717B9D4F1791E1C9004FBE94 /* HMMProblemAGKi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblemAGKi.h; sourceTree = "<group>"; };
-		717B9D501791E1D3004FBE94 /* HMMProblemAGKi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblemAGKi.cpp; sourceTree = "<group>"; };
 		71A39C9F179DAAC6000F9610 /* inputconvert.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = inputconvert.cpp; sourceTree = "<group>"; };
 		71A39CA9179DB04F000F9610 /* inputconvert */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = inputconvert; sourceTree = BUILT_PRODUCTS_DIR; };
 		71AF7DF4176F6C3F000C7E96 /* trainhmmOld */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = trainhmmOld; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -84,8 +74,6 @@
 		71D234AA17540AE7006985EB /* utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = utils.cpp; sourceTree = "<group>"; };
 		71D4587D17972C0400356EE4 /* InputUtil.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = InputUtil.cpp; sourceTree = "<group>"; };
 		71D4587E17972C0400356EE4 /* InputUtil.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = InputUtil.h; sourceTree = "<group>"; };
-		71F5217C173D4583008EE451 /* HMMProblemPiABGK.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblemPiABGK.cpp; sourceTree = "<group>"; };
-		71F5217D173D4583008EE451 /* HMMProblemPiABGK.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblemPiABGK.h; sourceTree = "<group>"; };
 		71F52180173D718F008EE451 /* run.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = run.sh; sourceTree = "<group>"; };
 		8DD76FB20486AB0100D96B5E /* HMM */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = HMM; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB025998162C61B600442454 /* compute_rmse.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = compute_rmse.sh; sourceTree = "<group>"; };
@@ -97,18 +85,10 @@
 		EB32E9F4157FA159002F3FFB /* predicthmm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = predicthmm; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB5D9029158B7C8C007ECB58 /* StripedArray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StripedArray.h; sourceTree = "<group>"; };
 		EB5D902A158B7C8C007ECB58 /* StripedArray.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StripedArray.cpp; sourceTree = "<group>"; };
-		EB7C55321552F7EC005DC9FC /* utilsNew.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utilsNew.h; sourceTree = "<group>"; };
-		EB7C55331552F7EC005DC9FC /* utilsNew.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = utilsNew.cpp; sourceTree = "<group>"; };
-		EB8BF8A915E7F71E00B8D6B0 /* HMMProblemPiG.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblemPiG.cpp; sourceTree = "<group>"; };
-		EB8BF8AA15E7F71E00B8D6B0 /* HMMProblemPiG.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblemPiG.h; sourceTree = "<group>"; };
 		EB994B9216288D0C0098D5ED /* FitBit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FitBit.cpp; sourceTree = "<group>"; };
 		EB994B9316288D0D0098D5ED /* FitBit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FitBit.h; sourceTree = "<group>"; };
-		EB9B4BE315596EEE00E21593 /* trainhmmNew.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = trainhmmNew.cpp; sourceTree = "<group>"; };
 		EB9B4C271559708F00E21593 /* trainhmm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = trainhmm; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB9D16B3162C60A7006E5A98 /* todo.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = todo.txt; sourceTree = "<group>"; };
-		EBADDC9F160211F000C6865E /* HMMProblemAGK.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblemAGK.cpp; sourceTree = "<group>"; };
-		EBADDCA0160211F000C6865E /* HMMProblemAGK.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblemAGK.h; sourceTree = "<group>"; };
-		EBADDCA216021E5900C6865E /* HMMProblemKT.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblemKT.cpp; sourceTree = "<group>"; };
 		EBADDCA316021E5900C6865E /* HMMProblemKT.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblemKT.h; sourceTree = "<group>"; };
 		EBBAF0BC160772210032B156 /* blas.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = blas.h; sourceTree = "<group>"; };
 		EBBAF0BD160772210032B156 /* blasp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = blasp.h; sourceTree = "<group>"; };
@@ -121,10 +101,6 @@
 		EBBAF0C4160772210032B156 /* linear.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = linear.h; sourceTree = "<group>"; };
 		EBBAF0C5160772210032B156 /* tron.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tron.cpp; sourceTree = "<group>"; };
 		EBBAF0C6160772210032B156 /* tron.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tron.h; sourceTree = "<group>"; };
-		EBD201D615F103CD003E97BF /* HMMProblemPiGK.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblemPiGK.cpp; sourceTree = "<group>"; };
-		EBD201D715F103CD003E97BF /* HMMProblemPiGK.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblemPiGK.h; sourceTree = "<group>"; };
-		EBD201DE15F8DD3F003E97BF /* HMMProblemPiAGK.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblemPiAGK.cpp; sourceTree = "<group>"; };
-		EBD201DF15F8DD3F003E97BF /* HMMProblemPiAGK.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblemPiAGK.h; sourceTree = "<group>"; };
 		EBD201E515F93481003E97BF /* sselog */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = sselog; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -201,25 +177,9 @@
 				71D234A617540A80006985EB /* HMMProblem.h */,
 				71D234A417540A7C006985EB /* HMMProblem.cpp */,
 				EBADDCA316021E5900C6865E /* HMMProblemKT.h */,
-				EBADDCA216021E5900C6865E /* HMMProblemKT.cpp */,
-				EB8BF8AA15E7F71E00B8D6B0 /* HMMProblemPiG.h */,
-				EB8BF8A915E7F71E00B8D6B0 /* HMMProblemPiG.cpp */,
-				EBD201D715F103CD003E97BF /* HMMProblemPiGK.h */,
-				EBD201D615F103CD003E97BF /* HMMProblemPiGK.cpp */,
-				EBADDCA0160211F000C6865E /* HMMProblemAGK.h */,
-				EBADDC9F160211F000C6865E /* HMMProblemAGK.cpp */,
-				717B9D4F1791E1C9004FBE94 /* HMMProblemAGKi.h */,
-				717B9D501791E1D3004FBE94 /* HMMProblemAGKi.cpp */,
-				EBD201DF15F8DD3F003E97BF /* HMMProblemPiAGK.h */,
-				EBD201DE15F8DD3F003E97BF /* HMMProblemPiAGK.cpp */,
-				71F5217D173D4583008EE451 /* HMMProblemPiABGK.h */,
-				71F5217C173D4583008EE451 /* HMMProblemPiABGK.cpp */,
-				EB9B4BE315596EEE00E21593 /* trainhmmNew.cpp */,
 				71D234A717540AB6006985EB /* trainhmm.cpp */,
 				EB32E9C7157F9D2E002F3FFB /* predicthmm.cpp */,
 				08FB7796FE84155DC02AAC07 /* main.cpp */,
-				EB7C55321552F7EC005DC9FC /* utilsNew.h */,
-				EB7C55331552F7EC005DC9FC /* utilsNew.cpp */,
 				71D234A917540AE0006985EB /* utils.h */,
 				71D234AA17540AE7006985EB /* utils.cpp */,
 				EB5D9029158B7C8C007ECB58 /* StripedArray.h */,
@@ -432,11 +392,6 @@
 				71AF7E01176F6D77000C7E96 /* StripedArray.cpp in Sources */,
 				71AF7E02176F6D7A000C7E96 /* FitBit.cpp in Sources */,
 				71035516178A148A00EA034B /* HMMProblem.cpp in Sources */,
-				71035518178A149700EA034B /* HMMProblemPiGK.cpp in Sources */,
-				71035519178A149B00EA034B /* HMMProblemAGK.cpp in Sources */,
-				7103551A178A149E00EA034B /* HMMProblemPiAGK.cpp in Sources */,
-				7103551B178A14A100EA034B /* HMMProblemPiABGK.cpp in Sources */,
-				717B9D511791E1D3004FBE94 /* HMMProblemAGKi.cpp in Sources */,
 				71D4588F17981E6500356EE4 /* InputUtil.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -453,7 +408,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				EB6936FC15EC398900A919B3 /* StripedArray.cpp in Sources */,
-				EB256605167FBADE00E9082A /* utilsNew.cpp in Sources */,
 				EB256607167FBF4000E9082A /* FitBit.cpp in Sources */,
 				7186A257178A19A70031A73E /* predicthmm.cpp in Sources */,
 			);
@@ -463,8 +417,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EB9B4C2B155970A400E21593 /* trainhmmNew.cpp in Sources */,
-				EB9B4C2D155970A400E21593 /* utilsNew.cpp in Sources */,
 				EB5D902B158B7C8C007ECB58 /* StripedArray.cpp in Sources */,
 				EBBAF0C7160772210032B156 /* daxpy.c in Sources */,
 				EBBAF0C8160772210032B156 /* ddot.c in Sources */,
