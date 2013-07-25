@@ -264,10 +264,10 @@ NUMBER doLog10Scale2D(NUMBER **ar, NPAR size1, NPAR size2) {
 		for(i=0; i<size1; i++)
 			for(j=0; j<size2; j++)
 				ar[i][j] = ar[i][j] / pow(10, max_10_scale);
-    //	if(min_10_scale<1000)
-    //		for(i=0; i<size1; i++)
-    //			for(j=0; j<size2; j++)
-    //				ar[i][j] = ar[i][j] / pow(10, min_10_scale);
+//	if(min_10_scale<1000)
+//		for(i=0; i<size1; i++)
+//			for(j=0; j<size2; j++)
+//				ar[i][j] = ar[i][j] / pow(10, min_10_scale);
 	return pow(10, max_10_scale);
 }
 
@@ -453,10 +453,6 @@ void set_param_defaults(struct param *param) {
 	param->ArmijoReduceFactor  = 2;//1/0.9;//
 	param->ArmijoSeed          = 1; //1; - since we use smooth stepping 1 is the only thing we need
     param->ArmijoMinStep       = 0.001; //  0.000001~20steps, 0.001~10steps
-    // coord descend
-    param->first_iteration_qualify = 0;
-    param->iterations_to_qualify   = 2;
-    
 }
 
 void destroy_input_data(struct param *param) {

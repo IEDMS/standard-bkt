@@ -10,13 +10,6 @@
 #include "utils.h"
 #include "InputUtil.h"
 #include "HMMProblem.h"
-////#include "HMMProblemPiG.h"
-#include "HMMProblemPiGK.h"
-#include "HMMProblemAGK.h"
-#include "HMMProblemAGKi.h"
-#include "HMMProblemPiAGK.h"
-#include "HMMProblemPiABGK.h"
-////#include "HMMProblemKT.h"
 #include "StripedArray.h"
 using namespace std;
 
@@ -108,24 +101,6 @@ int main (int argc, char ** argv) {
                     break;
                     //            case STRUCTURE_PIg: // Gradient Descent: PI by group, A,B by skill
                     //                hmm = new HMMProblemPiG(&param);
-                    //                break;
-                case STRUCTURE_PIgk: // Gradient Descent, pLo=f(K,G), other by K
-                    hmm = new HMMProblemPiGK(&param);
-                    break;
-                case STRUCTURE_PIAgk: // Gradient Descent, pLo=f(K,G), pT=f(K,G), other by K
-                    hmm = new HMMProblemPiAGK(&param);
-                    break;
-                case STRUCTURE_Agk: // Gradient Descent, pT=f(K,G), other by K
-                    hmm = new HMMProblemAGK(&param);
-                    break;
-                case STRUCTURE_Agki: // Gradient Descent, pT=f(K,G), other by K
-                    hmm = new HMMProblemAGKi(&param);
-                    break;
-                case STRUCTURE_PIABgk: // Gradient Descent, pT=f(K,G), other by K
-                    hmm = new HMMProblemPiABGK(&param);
-                    break;
-                    //            case BKT_GD_T: // Gradient Descent with Transfer
-                    //                hmm = new HMMProblemKT(&param);
                     //                break;
             }
             
@@ -258,9 +233,7 @@ void exit_with_help() {
 	printf(
 		   "Usage: trainhmm [options] input_file [[output_file] predicted_response_file]\n"
 		   "options:\n"
-		   "-s : structure.solver[.solver setting], structures: 1-by skill, 2-by user,\n"
-           "     3-Pi by skill, A,B-by user, 4-Pi by skill and user, A,B-by user,\n"
-           "     5-A by skill and user, Pi,B by skill, 6-Pi,A by skill and user, B by skill;\n"
+		   "-s : structure.solver[.solver setting], structures: 1-by skill, 2-by user;\n"
            "     solvers: 1-Baum-Welch, 2-Gradient Descent, 3-Conjugate Gradient Descent;\n"
            "     Conjugate Gradient Descent has 3 setings: 1-Polak-Ribiere, 2-Fletcher–Reeves,\n"
            "     3-Hestenes-Stiefel.\n"
@@ -291,7 +264,6 @@ void exit_with_help() {
 		   "-d : multi-skill per observation delimiter 0-sinle skill per observation (default), [delimiter character].\n"
            "     For example, '-d ~'.\n"
 		   "-b : treat input file as binary input file (lookup format specifications in help)\n"
-           
 		   );
 	exit(1);
 }
@@ -388,10 +360,7 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
                 ch = strtok(NULL,"\t\n\r"); // could be NULL (default GD solver)
                 if(ch != NULL)
                     param.solver_setting = (NPAR)atoi(ch);
-                if( param.structure != STRUCTURE_SKILL && param.structure != STRUCTURE_GROUP &&
-                   param.structure != STRUCTURE_PIg   && param.structure != STRUCTURE_PIgk  &&
-                   param.structure != STRUCTURE_PIAgk && param.structure != STRUCTURE_Agk &&
-                   param.structure != STRUCTURE_PIABgk && param.structure != STRUCTURE_Agki   ) {
+                if( param.structure != STRUCTURE_SKILL && param.structure != STRUCTURE_GROUP  ) {
                     fprintf(stderr, "Model Structure specified (%d) is out of range of allowed values\n",param.structure);
 					exit_with_help();
                 }
@@ -521,34 +490,13 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
             case  'd':
 				param.multiskill = argv[i][0]; // just grab first character (later, maybe several)
                 break;
-			case 'r': // coordinate descend parameters
-                // if two first_iteration_qualify,iterations_to_qualify
-                // if one iterations_to_qualify (first_iteration_qualify==0)
-				n = (NPAR)atoi( strtok(argv[i],",\t\n\r") );
-                ch = strtok(NULL,",\t\n\r"); // could be NULL (default GD solver)
-                if(ch==NULL) {// one parameter
-                    param.first_iteration_qualify = 0;
-                    param.iterations_to_qualify   = n;
-                } else {
-                    param.first_iteration_qualify = n;
-                    param.iterations_to_qualify   = (NPAR)atoi(ch);
-                }
-				break;
 			default:
 				fprintf(stderr,"unknown option: -%c\n", argv[i-1][1]);
 				exit_with_help();
 				break;
 		}
 	}
-    // post-argument checks
-    //    if( param.cv_target_obs>(param.nO-1)) {
-    //        fprintf(stderr,"target observation to be cross-validated against cannot be '%d'\n",param.cv_target_obs+1);
-    //        exit_with_help();
-    //    }
-    //    if(param.metrics_target_obs>(param.nO-1)) {
-    //        fprintf(stderr,"target observation to compute metrics against cannot be '%d'\n",param.metrics_target_obs+1);
-    //        exit_with_help();
-    //    }
+
     if(param.cv_target_obs>0 && param.metrics>0) { // correct for 0-start coding
         fprintf(stderr,"values for -v and -m cannot be both non-zeros\n");
         exit_with_help();
@@ -705,21 +653,6 @@ bool read_train_data(const char *filename) {
                 // link
                 param.k_data[ k_countg[k] ] = &param.all_data[n_all_data]; // in linear array
                 param.g_data[ g_countk[g] ] = &param.all_data[n_all_data]; // in linear array
-                // param.k_g_data[k] and param.g_k_data[g] are already linked
-                //                param.k_g_data[k][ k_countg[k] ] = Calloc(struct data, 1); // grab
-                //                param.g_k_data[g][ g_countk[g] ] = param.k_g_data[k][ k_countg[k] ]; // relink
-                //                param.k_g_data[k][ k_countg[k] ]->n = 1; // init data << VV
-                //                param.k_g_data[k][ k_countg[k] ]->k = k; // init k
-                //                param.k_g_data[k][ k_countg[k] ]->g = g; // init g
-                //                param.k_g_data[k][ k_countg[k] ]->cnt = 0;
-                //                param.k_g_data[k][ k_countg[k] ]->obs = NULL;
-                //                param.k_g_data[k][ k_countg[k] ]->alpha = NULL;
-                //                param.k_g_data[k][ k_countg[k] ]->beta = NULL;
-                //                param.k_g_data[k][ k_countg[k] ]->gamma = NULL;
-                //                param.k_g_data[k][ k_countg[k] ]->xi = NULL;
-                //                param.k_g_data[k][ k_countg[k] ]->c = NULL;
-                //                param.k_g_data[k][ k_countg[k] ]->p_O_param = 0.0;
-                //                param.k_g_data[k][ k_countg[k] ]->loglik = 0.0;
                 param.all_data[n_all_data].n = 1; // init data << VV
                 param.all_data[n_all_data].k = k; // init k
                 param.all_data[n_all_data].g = g; // init g
@@ -787,8 +720,6 @@ bool read_train_data(const char *filename) {
             if( skill_group_map[k][g]<2)
                 printf("ERROR! position [%d,%d] in skill_group_map should have been 2\n",k,g);
             else if( skill_group_map[k][g]==2 ) { // grab data and insert first dat point
-                //                param.k_g_data[k][ k_countg[k] ]->obs = Calloc(NPAR, param.k_g_data[k][ k_countg[k] ]->n); // grab
-                //                param.k_g_data[k][ k_countg[k] ]->obs[0] = o; // insert
                 param.k_g_data[k][ k_countg[k] ]->ix = Calloc(NDAT, param.k_g_data[k][ k_countg[k] ]->n); // grab
                 if(param.time)
                     param.k_g_data[k][ k_countg[k] ]->time = Calloc(int, param.k_g_data[k][ k_countg[k] ]->n); // grab
@@ -821,23 +752,6 @@ bool read_train_data(const char *filename) {
 	free(k_countg);
 	free(g_countk);
     free(index_null_skill_group);
-    // we delete linear column data in the end now
-    //    if(param.cv_folds==0 && param.structure != STRUCTURE_SKILL_T) {
-    //        if(param.multiskill==0) {
-    //            delete param.dat_skill;//.clear();
-    //            param.dat_skill = NULL;
-    //        }
-    //        else {
-    //            delete param.dat_multiskill;
-    //            param.dat_multiskill = NULL;
-    //        }
-    //        delete param.dat_group;
-    //        delete param.dat_obs;
-    //        delete param.dat_item;
-    //        param.dat_group = NULL;
-    //        param.dat_obs   = NULL;
-    //        param.dat_item  = NULL;
-    //    }
 	free2D<NPAR>(skill_group_map, param.nK);
     // reset `cnt'
     for(g=0; g<param.nG; g++) // for all groups
@@ -871,31 +785,12 @@ void cross_validate(NUMBER* metrics, const char *filename) {
     int q = param.quiet;
     param.quiet = 1;
     for(f=0; f<param.cv_folds; f++) {
-        switch(param.structure)
-        {
-            case STRUCTURE_SKILL: // Conjugate Gradient Descent
-            case STRUCTURE_GROUP: // Conjugate Gradient Descent
+//        switch(param.structure)
+//        {
+//            case STRUCTURE_SKILL:
+//            case STRUCTURE_GROUP: 
                 hmms[f] = new HMMProblem(&param);
-//                break;
-//                //            case STRUCTURE_PIg: // Gradient Descent: PI by group, A,B by skill
-//                //                hmm = new HMMProblemPiG(&param);
-//                //                break;
-//            case STRUCTURE_PIgk: // Gradient Descent, pLo=f(K,G), other by K
-//                hmms[f] = new HMMProblemPiGK(&param);
-//                break;
-//            case STRUCTURE_PIAgk: // Gradient Descent, pLo=f(K,G), pT=f(K,G), other by K
-//                hmms[f] = new HMMProblemPiAGK(&param);
-//                break;
-//            case STRUCTURE_Agk: // Gradient Descent, pT=f(K,G), other by K
-//                hmms[f] = new HMMProblemAGK(&param);
-//                break;
-//            case STRUCTURE_PIABgk: // Gradient Descent, pT=f(K,G), other by K
-//                hmms[f] = new HMMProblemPiABGK(&param);
-//                break;
-//                //            case BKT_GD_T: // Gradient Descent with Transfer
-//                //                hmm = new HMMProblemKT(&param);
-//                //                break;
-        }
+//        }
         // block respective data - do not fit the data belonging to the fold
         for(g=0; g<param.nG; g++) // for all groups
             if(folds[g]==f) { // if in current fold
@@ -1056,31 +951,13 @@ void cross_validate_item(NUMBER* metrics, const char *filename) {
     int q = param.quiet;
     param.quiet = 1;
     for(f=0; f<param.cv_folds; f++) {
-        switch(param.structure)
-        {
-            case STRUCTURE_SKILL: // Conjugate Gradient Descent
-            case STRUCTURE_GROUP: // Conjugate Gradient Descent
+//        switch(param.structure)
+//        {
+//            case STRUCTURE_SKILL:
+//            case STRUCTURE_GROUP:
                 hmms[f] = new HMMProblem(&param);
-                break;
-//                //            case STRUCTURE_PIg: // Gradient Descent: PI by group, A,B by skill
-//                //                hmm = new HMMProblemPiG(&param);
-//                //                break;
-//            case STRUCTURE_PIgk: // Gradient Descent, pLo=f(K,G), other by K
-//                hmms[f] = new HMMProblemPiGK(&param);
 //                break;
-//            case STRUCTURE_PIAgk: // Gradient Descent, pLo=f(K,G), pT=f(K,G), other by K
-//                hmms[f] = new HMMProblemPiAGK(&param);
-//                break;
-//            case STRUCTURE_Agk: // Gradient Descent, pT=f(K,G), other by K
-//                hmms[f] = new HMMProblemAGK(&param);
-//                break;
-//            case STRUCTURE_PIABgk: // Gradient Descent, pLo=f(K,G), pT=f(K,G), other by K
-//                hmms[f] = new HMMProblemPiABGK(&param);
-//                break;
-//                //            case BKT_GD_T: // Gradient Descent with Transfer
-//                //                hmm = new HMMProblemKT(&param);
-//                //                break;
-        }
+//        }
         // block respective data - do not fit the data belonging to the fold
         NPAR *saved_obs = Calloc(NPAR, fold_counts[f]);
         NDAT count_saved = 0;
@@ -1155,11 +1032,7 @@ void cross_validate_item(NUMBER* metrics, const char *filename) {
         for(int l=0; l<n; l++) {
             k = ar[l];
             dt.k = k;
-            //            // produce prediction and copy to result
-            //            for(m=0; m<param.nO; m++)
-            //                for(i=0; i<param.nS; i++)
-            //                    local_pred[m] += group_skill_map[g][k][i] * hmms[f]->getB(&dt,i,m);
-            // update p(L)
+            // produce prediction and copy to result
             pLe_denom = 0.0;
             // 1. pLe =  (L .* B(:,o)) ./ ( L'*B(:,o)+1e-8 );
             for(i=0; i<param.nS; i++) pLe_denom += group_skill_map[g][k][i] * hmms[f]->getB(&dt,i,o);
@@ -1170,8 +1043,6 @@ void cross_validate_item(NUMBER* metrics, const char *filename) {
                 for(i=0; i<param.nS; i++)
                     group_skill_map[g][k][j] += pLe[i] * hmms[f]->getA(&dt,i,j);
         }
-        //        for(m=0; m<param.nO; m++)
-        //            local_pred[m] /= n;
         if(param.predictions>0) // write predictions file if it was opened
             for(m=0; m<param.nO; m++)
                 fprintf(fid,"%10.8f%s",local_pred[m],(m<(param.nO-1))?"\t":"\n");
@@ -1229,38 +1100,19 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename) {
     srand ( (unsigned int)time(NULL) ); // randomize
     for(I=0; I<param.nI; I++) folds[I] = rand() % param.cv_folds; // produce folds
     // count number of items in each fold
-    //    for(I=0; I<param.nI; I++) fold_shortcounts[ folds[I] ]++; // produce folds
     for(t=0; t<param.N; t++)  fold_counts[ folds[param.dat_item->get(t)] ]++;
     // create and fit multiple problems
     HMMProblem* hmms[param.cv_folds];
     int q = param.quiet;
     param.quiet = 1;
     for(f=0; f<param.cv_folds; f++) {
-        switch(param.structure)
-        {
-            case STRUCTURE_SKILL: // Conjugate Gradient Descent
-            case STRUCTURE_GROUP: // Conjugate Gradient Descent
+//        switch(param.structure)
+//        {
+//            case STRUCTURE_SKILL: // Conjugate Gradient Descent
+//            case STRUCTURE_GROUP: // Conjugate Gradient Descent
                 hmms[f] = new HMMProblem(&param);
-                break;
-//                //            case STRUCTURE_PIg: // Gradient Descent: PI by group, A,B by skill
-//                //                hmm = new HMMProblemPiG(&param);
-//                //                break;
-//            case STRUCTURE_PIgk: // Gradient Descent, pLo=f(K,G), other by K
-//                hmms[f] = new HMMProblemPiGK(&param);
 //                break;
-//            case STRUCTURE_PIAgk: // Gradient Descent, pLo=f(K,G), pT=f(K,G), other by K
-//                hmms[f] = new HMMProblemPiAGK(&param);
-//                break;
-//            case STRUCTURE_Agk: // Gradient Descent, pT=f(K,G), other by K
-//                hmms[f] = new HMMProblemAGK(&param);
-//                break;
-//            case STRUCTURE_PIABgk: // Gradient Descent, pT=f(K,G), other by K
-//                hmms[f] = new HMMProblemPiABGK(&param);
-//                break;
-//                //            case BKT_GD_T: // Gradient Descent with Transfer
-//                //                hmm = new HMMProblemKT(&param);
-//                //                break;
-        }
+//        }
         // block respective data - do not fit the data belonging to the fold
         NPAR *saved_obs = Calloc(NPAR, fold_counts[f]);
         NDAT count_saved = 0;
@@ -1335,10 +1187,7 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename) {
         for(int l=0; l<n; l++) {
             k = ar[l];
             dt.k = k;
-            //            // produce prediction and copy to result
-            //            for(m=0; m<param.nO; m++)
-            //                for(i=0; i<param.nS; i++)
-            //                    local_pred[m] += group_skill_map[g][k][i] * hmms[f]->getB(&dt,i,m);
+            // produce prediction and copy to result
             // update p(L)
             pLe_denom = 0.0;
             // 1. pLe =  (L .* B(:,o)) ./ ( L'*B(:,o)+1e-8 );

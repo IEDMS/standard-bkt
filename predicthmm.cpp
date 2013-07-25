@@ -18,11 +18,6 @@
 #include <list>
 #include "utils.h"
 #include "HMMProblem.h"
-//#include "HMMProblemPiG.h"
-#include "HMMProblemPiGK.h"
-#include "HMMProblemAGK.h"
-#include "HMMProblemPiAGK.h"
-//#include "HMMProblemKT.h"
 using namespace std;
 
 #define COLUMNS 4
@@ -417,28 +412,13 @@ void read_model(const char *filename) {
     //
     // create hmm Object
     //
-    switch(param.structure)
-    {
-        case STRUCTURE_SKILL: // Conjugate Gradient Descent
-        case STRUCTURE_GROUP: // Conjugate Gradient Descent
+//    switch(param.structure)
+//    {
+//        case STRUCTURE_SKILL: // Conjugate Gradient Descent
+//        case STRUCTURE_GROUP: // Conjugate Gradient Descent
             hmm = new HMMProblem(&param);
-            break;
-            //            case STRUCTURE_PIg: // Gradient Descent: PI by group, A,B by skill
-            //                hmm = new HMMProblemPiG(&param);
-            //                break;
-        case STRUCTURE_PIgk: // Gradient Descent, pLo=f(K,G), other by K
-            hmm = new HMMProblemPiGK(&param);
-            break;
-        case STRUCTURE_PIAgk: // Gradient Descent, pLo=f(K,G), pT=f(K,G), other by K
-            hmm = new HMMProblemPiAGK(&param);
-            break;
-        case STRUCTURE_Agk: // Gradient Descent, pT=f(K,G), other by K
-            hmm = new HMMProblemAGK(&param);
-            break;
-            //            case BKT_GD_T: // Gradient Descent with Transfer
-            //                hmm = new HMMProblemKT(&param);
-            //                break;
-    }
+//            break;
+//    }
     //
     // read model
     //

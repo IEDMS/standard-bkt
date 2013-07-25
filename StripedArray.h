@@ -1,13 +1,13 @@
 /*
  *  StripedArray.h
- *  HMM
+ *  StripedArray is an array that grows in chunks, just to save time and not do
+ *       one extra linear scon of the data
  *
  *  Created by Mikhail Yudelson on 6/15/12.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
 
-//#include "utils.h"
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -110,9 +110,6 @@ StripedArray<T>::~StripedArray() {
 		free(this->stripes[i]);
     }
 	free(this->stripes);
-//	for(unsigned long i=0; i<this->nstripes;i++)
-//		delete [] this->stripes[i];
-//	delete [] this->stripes;
 }
 
 template <typename T>
@@ -150,10 +147,6 @@ T& StripedArray<T>::operator [](unsigned long idx) {
 	}
 	unsigned long idx_stripe = idx / this->stripe_size;
 	unsigned long idx_within = idx % this->stripe_size;
-//	if(idx_within>(this->size_last_stripe-1)) {
-//		fprintf(stderr, "Exception! Element index in last stripe %d exceeds sltipe size %d.\n",idx_within,this->size_last_stripe);
-//		return NULL;
-//	}
 	return this->stripes[idx_stripe][idx_within];
 }
 
@@ -165,10 +158,6 @@ T StripedArray<T>::get(unsigned long idx) {
 	}
 	unsigned long idx_stripe = idx / this->stripe_size;
 	unsigned long idx_within = idx % this->stripe_size;
-//	if(idx_within>(this->size_last_stripe-1)) {
-//		fprintf(stderr, "Exception! Element index in last stripe %d exceeds sltipe size %d\n",idx_within,this->size_last_stripe);
-//		return NULL;
-//	}
 	return this->stripes[idx_stripe][idx_within];
 }
 
@@ -180,10 +169,6 @@ void StripedArray<T>::set(unsigned long idx, T value) {
 	}
 	unsigned long idx_stripe = idx / this->stripe_size;
 	unsigned long idx_within = idx % this->stripe_size;
-    //	if(idx_within>(this->size_last_stripe-1)) {
-    //		fprintf(stderr, "Exception! Element index in last stripe %d exceeds sltipe size %d\n",idx_within,this->size_last_stripe);
-    //		return NULL;
-    //	}
 	this->stripes[idx_stripe][idx_within] = value;
 }
 
@@ -201,15 +186,6 @@ void StripedArray<T>::addStripe() {
 	}
 	
 	this->stripes = (T **) realloc(this->stripes,(++this->nstripes)*sizeof(T*)); // add pointer
-//	T** new_stripes = Calloc(T*, (this->nstripes));
-//	memcpy(new_stripes, this->stripes, sizeof(T*)*this->nstripes );
-//	free(this->stripes);
-//	this->stripes = Malloc(T*,this->nstripes+1);
-//	memcpy(this->stripes, new_stripes, sizeof(T*)*this->nstripes );
-//	this->nstripes++;
-//	free(new_stripes);
-	
-//	this->stripes[this->nstripes-1] = Calloc(T, this->stripe_size); // alloc data
 	this->stripes[this->nstripes-1] = (T*)calloc(this->stripe_size, sizeof(T)); // alloc data
 	this->size_last_stripe = 0; // reset counter
 }

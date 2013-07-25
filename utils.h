@@ -76,14 +76,7 @@ enum CROSS_VALIDATION {
 // "Structure" of the model we are fitting with a method
 enum STRUCTURE {
     STRUCTURE_SKILL   = 1,  // 1 - all by skill
-    STRUCTURE_GROUP   = 2,  // 2 - all by group (user)
-    STRUCTURE_PIg     = 3,  // 3 - PI by group, A,B by skill
-    STRUCTURE_PIgk    = 4,  // 4 - PI by skll&group, A,B by skill
-    STRUCTURE_PIAgk   = 5,  // 5 - PI, A by skll&group, B by skill
-    STRUCTURE_Agk     = 6,  // 6 - A by skll&group, PI,B by skill
-    STRUCTURE_PIABgk  = 7,  // 5 - PI, A, B by skll&group
-    STRUCTURE_SKILL_T = 8,  // 6 - by skill with transfer matrix
-    STRUCTURE_Agki    = 9   //     A by skll&group & interaction, PI,B by skill
+    STRUCTURE_GROUP   = 2  // 2 - all by group (user)
 };
 
 // return type cummrizing a result of a fir of the [subset of the] data
@@ -109,23 +102,6 @@ struct data {
 	NUMBER p_O_param; // ndat
     NUMBER loglik; // loglikelihood
 	NCAT k,g; // pointers to skill (k) and group (g)
-};
-
-// a sequence of observations (usually belonging to a student with respect to a property /e.g. problem/)
-struct pdata {
-	NDAT ndat; // number of data points (observations)
-	NDAT cnt;  // help counter, used for building the data and "banning" data from being fit when cross-valudating based on group
-    //	NPAR *obs; // onservations array - will become the pointer array to the big data
-    NDAT *idx; // these are 'ndat' indices to the through arrays (e.g. param.dat_obs and param.dat_item)
-	NUMBER *c; // nS  - scaling factor
-    int *time;
-	NUMBER **alpha; // ndat x nS
-	NUMBER **beta;  // ndat x nS
-	NUMBER **gamma; // ndat x nS
-	NUMBER ***xi; // ndat x nS x nS
-	NUMBER p_O_param; // ndat
-    NUMBER loglik; // loglikelihood
-	NCAT p,g; // pointers to skill (k) and group (g)
 };
 
 // parameters of the problem, including configuration parameters, vocabularies of string values, and data
@@ -194,9 +170,6 @@ struct param {
 	NUMBER ArmijoReduceFactor;		// Reduction to the step if rule is not satisfied
 	NUMBER ArmijoSeed;				// Seed step
 	NUMBER ArmijoMinStep;			// Minimum step to consider before abandoing reducing it
-    // coord descend
-    NPAR first_iteration_qualify; // at what iteration to start considering parameter for "graduating" (converging) >=0
-    NPAR iterations_to_qualify;   // how many interations of stable parameter values qualify it for "graduating" (converging)
 };
 
 void destroy_input_data(struct param *param);
