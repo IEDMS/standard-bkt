@@ -1,6 +1,6 @@
 //
 //  FitBit.h
-//  HMM
+//  FitBit is a helper class for gradient descent
 //
 //  Created by Mikhail Yudelson on 10/12/12.
 //

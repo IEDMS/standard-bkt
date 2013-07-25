@@ -9,20 +9,9 @@
 #include "utils.h"
 using namespace std;
 
-// project of others
-int compareNumber (const void * a, const void * b) {
-	NUMBER cmp = ( *(NUMBER*)a - *(NUMBER*)b );
-	return -1*(cmp<0) + 0 + (cmp>0)*1;
-}
-
 int compareNumberRev (const void * a, const void * b) {
-    //	return ( *(NUMBER*)b - *(NUMBER*)a );
 	NUMBER cmp = ( *(NUMBER*)b - *(NUMBER*)a );
 	return -1*(cmp<0) + 0 + (cmp>0)*1;
-}
-
-void qsortNumber(NUMBER* ar, NPAR size) {
-	qsort (ar, size, sizeof(NUMBER), compareNumber);
 }
 
 void qsortNumberRev(NUMBER* ar, NPAR size) {
@@ -141,50 +130,16 @@ void projectsimplexbounded(NUMBER* ar, NUMBER *lb, NUMBER *ub, NPAR size) {
 	free(at_lo);
 }
 
-
-
 NUMBER safe01num(NUMBER val) {
-    //    val = (val<0)?0:((val>1)?1:val); // squeeze into [0,1]
-    //	return val + SAFETY*(val==0) - SAFETY*(val==1); // then futher in
     return (val<=0)? SAFETY : ( (val>=1)? (1-SAFETY) : val );
 }
 
 NUMBER safe0num(NUMBER val) {
-    //    return (fabs(val)<SAFETY)?(SAFETY*(val>=0) + SAFETY*(val<0)*(-1)):val;
     return (val<SAFETY)?SAFETY:val;
-}
-
-NUMBER itself(NUMBER val) {
-	return val;
-}
-
-NUMBER deprecated_fsafelog(NUMBER val) {
-	return safelog(val + (val<=0)*SAFETY);
 }
 
 NUMBER safelog(NUMBER val) {
 	return log(val + (val<=0)*SAFETY);
-}
-
-NUMBER sigmoid(NUMBER val) {
-    return 1 / (1 + exp(-val));
-}
-
-NUMBER logit(NUMBER val) {
-    NUMBER prob = (val<=0)? SAFETY : ( (val>=1)? (1-SAFETY) : val );
-    return log( prob / (1-prob) );
-    //    return fsafelog(val/safe0num(1-val));
-}
-
-//#define logit(y)
-//#define logit(y)
-//NUMBER logit(NUMBER val) {
-//    //	return fsafelog( val / safe0num(1-val) );
-//    return fastsafelog((val+(val==0)*SAFETY)/(1-val+(val>=1)*SAFETY));
-//}
-
-NUMBER sgn(NUMBER val) {
-	return (0 < val) - (val < 0);
 }
 
 void add1DNumbersWeighted(NUMBER* sourse, NUMBER* target, NPAR size, NUMBER weight) {
@@ -217,60 +172,6 @@ bool isPassesLim(NUMBER* ar, NPAR size, NUMBER *lb, NUMBER* ub) {
 	}
 	return fabs(sum-1)<SAFETY;
 }
-
-// scale by smallest factor of 10 (max scaling by default
-NUMBER doLog10Scale1D(NUMBER *ar, NPAR size) {
-	NPAR i;
-	NUMBER min_10_scale = 1000, max_10_scale = 0, candidate;
-	for(i=0; i<size; i++) {
-		if( fabs(ar[i]) < SAFETY ) // 0 gradient
-			continue;
-		candidate = floor( log10( fabs(ar[i]) ) );
-		if(candidate < min_10_scale)
-			min_10_scale = candidate;
-		candidate = ceil( log10( fabs(ar[i]) ) );
-		if(candidate > max_10_scale)
-			max_10_scale = candidate;
-	}
-	min_10_scale++;
-	max_10_scale++;
-	if(max_10_scale > 0)
-		for(i=0; i<size; i++)
-			ar[i] = ar[i] / pow(10, max_10_scale);
-    //	if(min_10_scale<1000)
-    //		for(i=0; i<size; i++)
-    //			ar[i] = ar[i] / pow(10, min_10_scale);
-	return pow(10, max_10_scale);
-}
-
-// scale by smallest factor of 10  (max scaling by default
-NUMBER doLog10Scale2D(NUMBER **ar, NPAR size1, NPAR size2) {
-	NPAR i,j;
-	NUMBER min_10_scale = 1000, max_10_scale = 0, candidate;
-	for(i=0; i<size1; i++)
-		for(j=0; j<size2; j++) {
-			if( fabs(ar[i][j]) < SAFETY ) // 0 gradient
-				continue;
-			candidate = floor( log10( fabs(ar[i][j]) ) );
-			if(candidate < min_10_scale)
-				min_10_scale = candidate;
-			candidate = ceil( log10( fabs(ar[i][j]) ) );
-			if(candidate > max_10_scale)
-				max_10_scale = candidate;
-		}
-	min_10_scale++;
-	max_10_scale++;
-	if(max_10_scale >0 )
-		for(i=0; i<size1; i++)
-			for(j=0; j<size2; j++)
-				ar[i][j] = ar[i][j] / pow(10, max_10_scale);
-//	if(min_10_scale<1000)
-//		for(i=0; i<size1; i++)
-//			for(j=0; j<size2; j++)
-//				ar[i][j] = ar[i][j] / pow(10, min_10_scale);
-	return pow(10, max_10_scale);
-}
-
 
 // Gentle - as per max distance to go toward extreme value of 0 or 1
 NUMBER doLog10Scale1DGentle(NUMBER *grad, NUMBER *par, NPAR size) {
@@ -333,56 +234,6 @@ void zeroLabels(NCAT xdat, struct data** x_data) { // set counts in data sequenc
 	NCAT x;
 	for(x=0; x<xdat; x++)
 		x_data[x][0].cnt = 0;
-}
-
-// whether one value is no less than 20% of the sum
-bool isBalancedArray(NUMBER *ar, NPAR size) {
-	NPAR i;
-	NUMBER sum = 0;
-	for(i=0; i<size; i++)
-		sum += ar[i];
-	for(i=0; i<size; i++)
-		if( ar[i]/sum < 0.2)
-			return false;
-	return true;
-}
-
-
-// log-scaled math
-NUMBER eexp(NUMBER x) {
-	return (x>=LOGZERO)?0:exp(x);
-}
-
-NUMBER eln(NUMBER x) {
-	if(x==0 || (x>0 && x<SAFETY))
-		return LOGZERO;
-	else if(x>0)
-		return safelog(x);
-	else {
-		printf("Error, log of negative value!\n");
-		return 1/SAFETY;
-	}
-}
-
-NUMBER elnsum(NUMBER eln_x, NUMBER eln_y) {
-	if( (eln_x>=LOGZERO) || (eln_y>=LOGZERO) ) {
-		if(eln_x>=LOGZERO)
-			return eln_y;
-		else
-			return eln_x;
-	} else {
-		if( eln_x >  eln_y)
-			return eln_x + eln(1 + exp(eln_y-eln_x));
-		else
-			return eln_x + eln(1 + exp(eln_x-eln_y));
-	}
-}
-
-NUMBER elnprod(NUMBER eln_x, NUMBER eln_y) {
-	if( (eln_x>=LOGZERO) || (eln_y>=LOGZERO) )
-		return LOGZERO;
-	else
-		return eln_x + eln_y;
 }
 
 //
@@ -586,93 +437,6 @@ void RecycleFitData(NCAT xndat, struct data** x_data, struct param *param) {
 			x_data[x][0].xi = NULL;
 		}
 	}
-}
-
-//
-// working with time
-//
-
-// limits are the borders of time bins, there are nlimits+1 bins total,  bins 0:nlimits
-NPAR sec_to_linear_interval(int time, int *limits, NPAR nlimits){
-    for(NPAR i=0; i<nlimits; i++)
-        if( time < limits[i] )
-            return i;
-    return nlimits;
-}
-
-// limits are the borders of time bins, there are nlimits+1 bins total
-int time_lim_20HDWM[5] = {20*60, 60*60, 24*60*60, 7*24*60*60, 30*24*60*60}; // 20min, hour, day, week, month
-
-// 9 categories: <2m, <20m, <1h, same day, next day, same week, next week, <30d, >=30d
-NPAR sec_to_9cat(int time1, int time2, int *limits, NPAR nlimits) {
-    int diff = time2 - time1;
-    
-    if(diff <0 ) {
-        fprintf(stderr,"ERROR! time 1 should be smaller than time 2\n");
-        return 0;
-    } else if ( diff < (2*60) ) { // 20min
-        return 0;
-    } else if ( diff < (20*60) ) { // 20min
-        return 1;
-    } else if (diff < (60*60) ) { // 1h
-        return 2;
-    } else if(diff < (14*24*60*60)) { // detect date structures
-        time_t t1 = (time_t)time1;
-        time_t t2 = (time_t)time2;
-        struct tm * ttm1 = localtime (&t1);
-        struct tm * ttm2 = localtime (&t2);
-        if( diff < (24*60*60) && ttm1->tm_mday==ttm2->tm_mday ) { // same day
-            return 3;
-        } else if(    diff < (2*24*60*60) &&                      // next day
-                  ( (ttm2->tm_wday == (ttm1->tm_wday+1)) ||
-                   (ttm1->tm_wday==6 && ttm2->tm_wday==0)
-                   )
-                  ) {
-            return 4;
-        } else if( diff < (7*24*60*60) && (ttm1->tm_wday<ttm2->tm_wday) ) { // this week
-            return 5;
-        } else { // next week
-            return 6;
-        }
-    } else if(diff < (30*24*60*60)) { // less than 30 days
-        return 7;
-    } else if(diff >= (30*24*60*60)) { // 30 days or more
-        return 8;
-    }
-    return 0;
-}
-
-
-// write time intervals to file
-void write_time_interval_data(param* param, const char *file_name) {
-    if(param->time != 1) {
-        fprintf(stderr,"ERROR! Time data has not been read.\n");
-        return;
-    }
-    std::map<NCAT,std::string>::iterator it_g;
-    std::map<NCAT,std::string>::iterator it_k;
-    string group, skill;
-    data *dt;
-    // open file
-    FILE *fid = fopen(file_name,"w");
-    fprintf(fid,"Group\tKC\ttime1\ttime2\ttimediff\ttime_lim_20HDWM\tOutcome\n");
-    // for all groups
-    for(NCAT g=0; g<param->nG; g++) {
-        // for all KCs
-        it_g = param->map_group_bwd->find(g);
-        for(NCAT k=0; k<param->g_numk[g]; k++) {
-            it_k = param->map_skill_bwd->find(k);
-            dt = param->g_k_data[g][k];
-            // for times from 2 to N
-            for(NDAT t=1; t<dt->n; t++) {
-                //                NPAR code = sec_to_linear_interval(dt->time[t]-dt->time[t-1], time_lim_20HDWM, sizeof(time_lim_20HDWM)/sizeof(int));
-                NPAR code = sec_to_9cat(dt->time[t-1], dt->time[t], time_lim_20HDWM, sizeof(time_lim_20HDWM)/sizeof(int));
-                fprintf(fid,"%s\t%s\t%d\t%d\t%d\t%d\t%d\n", it_g->second.c_str(), it_k->second.c_str(), dt->time[t-1], dt->time[t], (dt->time[t]-dt->time[t-1]), code, 1-param->dat_obs->get( dt->ix[t] ) );
-            }// for times from 2 to N
-        }// for all KCs
-    }// for all groups
-    // close file
-    fclose(fid);
 }
 
 // penalties

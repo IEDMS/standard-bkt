@@ -35,9 +35,6 @@ FitBit::FitBit(NPAR a_nS, NPAR a_nO, NCAT a_nK, NCAT a_nG, NUMBER a_tol) {
 }
 
 FitBit::~FitBit() {
-//    if(this->PI != NULL) free(this->PI); // these are usually linked
-//    if(this->A != NULL) free2D<NUMBER>(this->A, this->nS); // these are usually linked
-//    if(this->B != NULL) free2D<NUMBER>(this->B, this->nS); // these are usually linked
     if(this->PIm1 != NULL) free(this->PIm1);
     if(this->Am1 != NULL) free2D<NUMBER>(this->Am1, this->nS);
     if(this->Bm1 != NULL) free2D<NUMBER>(this->Bm1, this->nS);

@@ -179,8 +179,7 @@ void writeSolverInfo(FILE *fid, struct param *param);
 void readSolverInfo(FILE *fid, struct param *param, NDAT *line_no);
 
 // projection of others
-int compareNumber (const void * a, const void * b);
-void qsortNumber(NUMBER* ar, NPAR size);
+int compareNumberRev (const void * a, const void * b);
 void qsortNumberRev(NUMBER* ar, NPAR size);
 void projsimplex(NUMBER* ar, NPAR size);
 
@@ -302,12 +301,7 @@ template<typename T> void swap3D(T*** source, T*** target, NDAT size1, NDAT size
 
 NUMBER safe01num(NUMBER val); // convert number to a safe [0, 1] range
 NUMBER safe0num(NUMBER val); // convert number to a safe (0, inf) or (-inf, 0) range
-NUMBER itself(NUMBER val);
-NUMBER logit(NUMBER val);
-NUMBER sigmoid(NUMBER val);
-NUMBER deprecated_fsafelog(NUMBER val); // fast and safe log for params
 NUMBER safelog(NUMBER val); // safe log for prediction
-NUMBER sgn(NUMBER val);
 
 void add1DNumbersWeighted(NUMBER* sourse, NUMBER* target, NPAR size, NUMBER weight);
 
@@ -317,24 +311,11 @@ void add2DNumbersWeighted(NUMBER** sourse, NUMBER** target, NPAR size1, NPAR siz
 bool isPasses(NUMBER* ar, NPAR size);
 bool isPassesLim(NUMBER* ar, NPAR size, NUMBER* lb, NUMBER *ub);
 
-NUMBER doLog10Scale1D(NUMBER *ar, NPAR size);
-NUMBER doLog10Scale2D(NUMBER **ar, NPAR size1, NPAR size2);
 NUMBER doLog10Scale1DGentle(NUMBER *grad, NUMBER *par, NPAR size);
 NUMBER doLog10Scale2DGentle(NUMBER **grad, NUMBER **par, NPAR size1, NPAR size2);
 
 void zeroLabels(NCAT xdat, struct data** x_data); // for skill of group
 void zeroLabels(struct param* param); // set counts in all data sequences to zero
-
-// whether one value is no less than 20% of the sum
-bool isBalancedArray(NUMBER *ar, NPAR size);
-
-//http://bozeman.genome.washington.edu/compbio/mbt599_2006/hmm_scaling_revised.pdf
-#define LOGZERO -1e10
-NUMBER eexp(NUMBER x);
-NUMBER eln(NUMBER x);
-NUMBER elnsum(NUMBER eln_x, NUMBER eln_y);
-NUMBER elnprod(NUMBER eln_x, NUMBER eln_y);
-
 
 //
 // The heavy end - common functionality
@@ -342,19 +323,7 @@ NUMBER elnprod(NUMBER eln_x, NUMBER eln_y);
 void set_param_defaults(struct param *param);
 void RecycleFitData(NCAT xndat, struct data** x_data, struct param *param);
 
-//
-// working with time
-//
-
-// limits are the borders of time bins, there are nlimits+1 bins total
-NPAR sec_to_linear_interval(int time, int *limits, NPAR nlimits);
-// 8 categories: <20m, <1h, same day, next day, same week, next week, <30d, >=30d
-NPAR sec_to_9cat(int time1, int time2, int *limits, NPAR nlimits);
-// write time intervals to file
-void write_time_interval_data(param* param, const char *file_name);
-
 // penalties
-//NUMBER penalty_offset = 0.5;
 NUMBER L2penalty(param* param, NUMBER w);
 
 
