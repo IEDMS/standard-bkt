@@ -41,6 +41,7 @@
 		71A39C9F179DAAC6000F9610 /* inputconvert.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = inputconvert.cpp; sourceTree = "<group>"; };
 		71A39CA9179DB04F000F9610 /* inputconvert */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = inputconvert; sourceTree = BUILT_PRODUCTS_DIR; };
 		71AF7DF4176F6C3F000C7E96 /* trainhmmOld */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = trainhmmOld; sourceTree = BUILT_PRODUCTS_DIR; };
+		71B056FD17A29AAC007D146C /* readme.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = readme.txt; sourceTree = "<group>"; };
 		71D234A417540A7C006985EB /* HMMProblem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblem.cpp; sourceTree = "<group>"; };
 		71D234A617540A80006985EB /* HMMProblem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblem.h; sourceTree = "<group>"; };
 		71D234A717540AB6006985EB /* trainhmm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = trainhmm.cpp; sourceTree = "<group>"; };
@@ -97,6 +98,7 @@
 				EB02599A162C61B600442454 /* create_train.sh */,
 				EB02599B162C61B600442454 /* make.sh */,
 				EB02599C162C61B600442454 /* makefile */,
+				71B056FD17A29AAC007D146C /* readme.txt */,
 				EB9D16B3162C60A7006E5A98 /* todo.txt */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,

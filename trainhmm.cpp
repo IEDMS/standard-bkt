@@ -1,3 +1,29 @@
+/*
+ ******************************************************************
+ Copyright (c) 2012, Michael (Mikhail) Yudelson
+ 
+ Redistribution and/or use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ 
+ * Redistributions of source code should retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+ * Redistributions in binary form should reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+ 
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT  LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ ******************************************************************
+ */
+
 #include <string.h>
 #include <iostream>
 #include <fstream>
@@ -20,15 +46,12 @@ static int max_line_length;
 void exit_with_help();
 void parse_arguments(int argc, char **argv, char *input_file_name, char *output_file_name, char *predict_file_name);
 bool read_train_data(const char *filename);
-//bool read_predict_data(const char *filename);
 static char* readline(FILE *fid);
 void cross_validate(NUMBER* metrics, const char *filename);
 void cross_validate_item(NUMBER* metrics, const char *filename);
 void cross_validate_nstrat(NUMBER* metrics, const char *filename);
 
 int main (int argc, char ** argv) {
-    
-//    int c = (unsigned long)ceil((double)34600/20000);
     
 	clock_t tm0 = clock();
 	char input_file[1024];
@@ -43,49 +66,11 @@ int main (int argc, char ** argv) {
         printf("trainhmm starting...\n");
 	bool is_data_read = read_train_data(input_file);
     
-//    //
-//    // read item mean % correct
-//    //
-//    FILE *fid = fopen("a89_kts_train01_voc_i.txt","r");
-//	max_line_length = 1024;
-//	char *col;
-//    string item;
-//    map<string,NCAT2>::iterator it;
-//    param.item_complexity = Calloc(NUMBER, param.map_step_bwd->size());
-//    line = (char *)malloc(max_line_length);// Malloc(char,max_line_length);
-//    while( readline(fid)!=NULL) {
-//		// Group
-//		col = strtok(line,"\t\n\r");
-//		item = string( col );
-//		it = param.map_step_fwd->find(item);
-//		if( it==param.map_step_fwd->end() ) { // not found
-//            fprintf(stderr,"DID NOT FIND THE STEP!!\n");
-//            return false;
-//		}
-//		else {
-////            if( it->second > param.map_step_bwd->size()) {
-////                int z = 0 ;
-////            }
-//            NUMBER v = atof( strtok(NULL,"\t\n\r") );
-//            param.item_complexity[ it->second ] = v;
-//		}
-//    }
-//    free(line);
-//    fclose(fid);
-
     if( is_data_read ) {
         if(!param.quiet)
             printf("input read, nO=%d, nG=%d, nK=%d, nI=%d\n",param.nO, param.nG, param.nK, param.nI);
         
         clock_t tm;
-        
-        //    // write time
-        //    if(param.time==1) {
-        //        const char * fn = "a89_kts_times.txt";
-        ////        const char * fn = "a89_uskts_times.txt";
-        //        write_time_interval_data(&param, fn);
-        //    }
-        
         
         // erase blocking labels
         zeroLabels(&param);
@@ -93,91 +78,16 @@ int main (int argc, char ** argv) {
         if(param.cv_folds==0) { // not cross-validation
             // create problem
             HMMProblem *hmm;
-            switch(param.structure)
-            {
-                case STRUCTURE_SKILL: // Conjugate Gradient Descent
-                case STRUCTURE_GROUP: // Conjugate Gradient Descent
+//            switch(param.structure)
+//            {
+//                case STRUCTURE_SKILL: // Conjugate Gradient Descent
+//                case STRUCTURE_GROUP: // Conjugate Gradient Descent
                     hmm = new HMMProblem(&param);
-                    break;
-                    //            case STRUCTURE_PIg: // Gradient Descent: PI by group, A,B by skill
-                    //                hmm = new HMMProblemPiG(&param);
-                    //                break;
-            }
+//                    break;
+//            }
             
             tm = clock();
             hmm->fit();
-            
-            //
-            // this is "incremental" bit... will be removed later
-            //
-            //        HMMProblem *hmmO;
-            
-            //        // (1-2)
-            //        hmmO = hmm;
-            //        hmm = new HMMProblemPiGK(&param);
-            //        param.structure = STRUCTURE_PIgk;
-            //        for(NCAT k=0; k<param.nK; k++) { // copy the rest
-            //            cpy1D<NUMBER>(hmmO->getPI(k), hmm->getPI(k), param.nS);
-            //            cpy2D<NUMBER>(hmmO->getA(k), hmm->getA(k), param.nS, param.nS);
-            //            cpy2D<NUMBER>(hmmO->getB(k), hmm->getB(k), param.nS, param.nO);
-            //        }
-            //        delete hmmO;
-            //        hmm->fit();
-            
-            //        // (1-3)
-            //        hmmO = hmm;
-            //        hmm = new HMMProblemAGK(&param);
-            //        param.structure = STRUCTURE_Agk;
-            //        for(NCAT k=0; k<param.nK; k++) { // copy the rest
-            //            cpy1D<NUMBER>(hmmO->getPI(k), hmm->getPI(k), param.nS);
-            //            cpy2D<NUMBER>(hmmO->getA(k), hmm->getA(k), param.nS, param.nS);
-            //            cpy2D<NUMBER>(hmmO->getB(k), hmm->getB(k), param.nS, param.nO);
-            //        }
-            //        delete hmmO;
-            //        hmm->fit();
-            
-            //        // (1-4)
-            //        hmmO = hmm;
-            //        hmm = new HMMProblemPiAGK(&param);
-            //        param.structure = STRUCTURE_PIAgk;
-            //        for(NCAT k=0; k<param.nK; k++) { // copy the rest
-            //            cpy1D<NUMBER>(hmmO->getPI(k), hmm->getPI(k), param.nS);
-            //            cpy2D<NUMBER>(hmmO->getA(k), hmm->getA(k), param.nS, param.nS);
-            //            cpy2D<NUMBER>(hmmO->getB(k), hmm->getB(k), param.nS, param.nO);
-            //        }
-            //        delete hmmO;
-            //        hmm->fit();
-            
-            //        // (2-4,1-2-4)
-            //        hmmO = hmm;
-            //        hmm = new HMMProblemPiAGK(&param);
-            //        param.structure = STRUCTURE_PIAgk;
-            //        for(NCAT k=0; k<param.nK; k++) { // copy the rest
-            //            cpy1D<NUMBER>(hmmO->getPI(k), hmm->getPI(k), param.nS);
-            //            cpy2D<NUMBER>(hmmO->getA(k), hmm->getA(k), param.nS, param.nS);
-            //            cpy2D<NUMBER>(hmmO->getB(k), hmm->getB(k), param.nS, param.nO);
-            //        }
-            //        for(NCAT g=0; g<param.nG; g++) { // copy the rest
-            //            cpy1D<NUMBER>(((HMMProblemPiGK *)hmmO)->getPIg(g), ((HMMProblemPiAGK *)hmm)->getPIg(g), param.nS);
-            //        }
-            //        delete hmmO;
-            //        hmm->fit();
-            
-            //        // (3-4, 1-3-4)
-            //        hmmO = hmm;
-            //        hmm = new HMMProblemPiAGK(&param);
-            //        param.structure = STRUCTURE_PIAgk;
-            //        for(NCAT k=0; k<param.nK; k++) { // copy the rest
-            //            cpy1D<NUMBER>(hmmO->getPI(k), hmm->getPI(k), param.nS);
-            //            cpy2D<NUMBER>(hmmO->getA(k), hmm->getA(k), param.nS, param.nS);
-            //            cpy2D<NUMBER>(hmmO->getB(k), hmm->getB(k), param.nS, param.nO);
-            //        }
-            //        for(NCAT g=0; g<param.nG; g++) { // copy the rest
-            //            cpy2D<NUMBER>(((HMMProblemAGK *)hmmO)->getAg(g), ((HMMProblemPiAGK *)hmm)->getAg(g), param.nS, param.nS);
-            //        }
-            //        delete hmmO;
-            //        hmm->fit();
-            
             
             if(param.quiet == 0)
                 printf("fitting is done in %8.6f seconds\n",(NUMBER)(clock()-tm)/CLOCKS_PER_SEC);
@@ -339,20 +249,6 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 				//fprintf(stdout, "fit single skill=%d\n",param.quiet);
 				break;
 			case 's':
-                //				param.solver = (NPAR)atoi( strtok(argv[i],".\t\n\r") );
-                //                ch = strtok(NULL,"\t\n\r");
-                //                if(ch != NULL)
-                //                    param.solver_setting = (NPAR)atoi(ch);
-                //                if( param.solver != BKT_CGD      && param.solver != BKT_GD      &&
-                //                    param.solver != BKT_BW       && param.solver != BKT_GD_BW   &&
-                //                    param.solver != BKT_BW_GD    && param.solver != BKT_GD_G    &&
-                //                    param.solver != BKT_GD_PIg   && param.solver != BKT_GD_PIgk &&
-                //                    param.solver != BKT_GD_APIgk && param.solver != BKT_GD_Agk  &&
-                //                    param.solver != BKT_GD_T ) {
-                //                    fprintf(stderr, "Method specified (%d) is out of range of allowed values\n",param.solver);
-                //					exit_with_help();
-                //                }
-                //                // new
 				param.structure = (NPAR)atoi( strtok(argv[i],".\t\n\r") );
                 ch = strtok(NULL,".\t\n\r"); // could be NULL (default GD solver)
                 if(ch != NULL)

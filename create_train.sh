@@ -5,8 +5,18 @@
 # arg3 ss, kts
 # arg4 if 0  - default, s - add unit and section to kc name '__' is separator lowercase, u - just unit
 # arg5 anything, markind test file
-# arg6 if non empty and non 0 add 5th column with POSIX time (seconds since 1970)
+# arg6 if non empty and non 0 add 5th column with POSIX time (seconds since 1 Jan 1970)
 echo "Creating train file..."
+#set -x # to display commands
+
+
+# Example
+# gawk '-F\t' 'BEGIN{OFS=""} {print ".","\t",$2,"\t",$3,"__",$4,"\t",tolower($20)}' algebra_2008_2009_train.txt > tmp1.txt
+# sed 1d tmp1.txt
+# rm tmp1.txt
+# awk '-F\t' 'BEGIN{OFS=""} {print $1,"\t",$2,"\t",$3,"\t",((length($4)==0)?".":$4)}' tmp2.txt > a89_kts_train.txt
+# rm tmp2.txt
+
 
 tmp1=tmp1_`date +%H%M%S`.txt
 tmp2=tmp2_`date +%H%M%S`.txt
@@ -96,5 +106,9 @@ awk -F'\t' 'BEGIN{OFS=""} {print $1,"\t",$2,"\t",$3,"\t",'"$second_awk"''"$time_
 
 rm $tmp2
 
+#set +x # to stop displaying commands
+
 echo "Done"
+
+
 
