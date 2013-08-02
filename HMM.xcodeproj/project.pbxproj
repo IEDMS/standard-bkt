@@ -50,11 +50,6 @@
 		71D234AA17540AE7006985EB /* utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = utils.cpp; sourceTree = "<group>"; };
 		71D4587D17972C0400356EE4 /* InputUtil.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = InputUtil.cpp; sourceTree = "<group>"; };
 		71D4587E17972C0400356EE4 /* InputUtil.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = InputUtil.h; sourceTree = "<group>"; };
-		71F52180173D718F008EE451 /* run.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = run.sh; sourceTree = "<group>"; };
-		EB025998162C61B600442454 /* compute_rmse.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = compute_rmse.sh; sourceTree = "<group>"; };
-		EB025999162C61B600442454 /* create_test.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = create_test.sh; sourceTree = "<group>"; };
-		EB02599A162C61B600442454 /* create_train.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = create_train.sh; sourceTree = "<group>"; };
-		EB02599B162C61B600442454 /* make.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = make.sh; sourceTree = "<group>"; };
 		EB02599C162C61B600442454 /* makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = makefile; sourceTree = "<group>"; };
 		EB32E9C7157F9D2E002F3FFB /* predicthmm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = predicthmm.cpp; sourceTree = "<group>"; };
 		EB32E9F4157FA159002F3FFB /* predicthmm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = predicthmm; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -62,7 +57,6 @@
 		EB5D902A158B7C8C007ECB58 /* StripedArray.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StripedArray.cpp; sourceTree = "<group>"; };
 		EB994B9216288D0C0098D5ED /* FitBit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FitBit.cpp; sourceTree = "<group>"; };
 		EB994B9316288D0D0098D5ED /* FitBit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FitBit.h; sourceTree = "<group>"; };
-		EB9D16B3162C60A7006E5A98 /* todo.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = todo.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,15 +87,9 @@
 		08FB7794FE84155DC02AAC07 /* HMM */ = {
 			isa = PBXGroup;
 			children = (
-				EB025998162C61B600442454 /* compute_rmse.sh */,
-				EB025999162C61B600442454 /* create_test.sh */,
-				71F52180173D718F008EE451 /* run.sh */,
-				EB02599A162C61B600442454 /* create_train.sh */,
-				EB02599B162C61B600442454 /* make.sh */,
 				EB02599C162C61B600442454 /* makefile */,
 				71B056FD17A29AAC007D146C /* readme.txt */,
 				715BD81017AB35E700C9B6D3 /* toy_data.txt */,
-				EB9D16B3162C60A7006E5A98 /* todo.txt */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
