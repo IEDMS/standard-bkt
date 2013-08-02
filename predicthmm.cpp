@@ -104,15 +104,15 @@ int main (int argc, char ** argv) {
 void exit_with_help() {
 	printf(
 		   "Usage: predicthmm [options] input_file model_file [predicted_response_file]\n"
-		   "options:\n"
-		   "-q : quiet mode, without output, 0-no (default), or 1-yes\n"
-		   "-m : report model fitting metrics (AIC, BIC, RMSE) 0-no (default), 1-yes. \n"
-           "     To specify observation for which metrics to be reported, list it after\n"
-           "     ';'. For example '-m 1' (by default, observation 1 is assumed),\n"
-           "     '-m 1;2' (compute metrics for observation 2).\n"
-		   "-d : multi-skill per observation delimiter, if absent -single skill per\n"
-           "      observation (default). For example '-d ~'\n"
-		   "-b : treat input file as binary 0-no (default) or 1-yes\n"
+           "options:\n"
+           "-q : quiet mode, without output, 0-no (default), or 1-yes\n"
+           "-m : report model fitting metrics (AIC, BIC, RMSE) 0-no (default), 1-yes. To \n"
+           "     specify observation for which metrics to be reported, list it after ','.\n"
+           "     For example '-m 0', '-m 1' (by default, observation 1 is assumed), '-m 1,2'\n"
+           "     (compute metrics for observation 2). Incompatible with-v option.\n"
+           "-d : delimiter for multiple skills per observation; 0-single skill per\n"
+           "     observation (default), otherwise -- delimiter character, e.g. '-d ~'.\n"
+           "-b : treat input file as binary input file (specifications TBA).\n"
 		   );
 	exit(1);
 }
