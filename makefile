@@ -1,6 +1,5 @@
 CXX ?= $(CXX) $(CFLAGS)
 CFLAGS = -Wall -Wconversion -O3 -fPIC
-#LIBS = blas/blas.a
 SHVER = 1
 OS = $(shell uname)
 

@@ -1,27 +1,30 @@
 /*
- ******************************************************************
+ 
  Copyright (c) 2012, Michael (Mikhail) Yudelson
+ All rights reserved.
  
- Redistribution and/or use in source and binary forms, with or without
+ Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
- 
- * Redistributions of source code should retain the above copyright notice, this
- list of conditions and the following disclaimer.
- * Redistributions in binary form should reproduce the above copyright notice,
- this list of conditions and the following disclaimer in the documentation
- and/or other materials provided with the distribution.
+ * Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+ * Neither the name of the Michael (Mikhail) Yudelson nor the
+ names of other contributors may be used to endorse or promote products
+ derived from this software without specific prior written permission.
  
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT  LIMITED TO, THE IMPLIED
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDERS AND CONTRIBUTORS BE LIABLE FOR
  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- ******************************************************************
+ 
  */
 
 #include <string.h>
@@ -43,7 +46,6 @@ using namespace std;
 struct param param;
 static char *line = NULL;
 static int max_line_length;
-static NDAT global_predict_N;
 HMMProblem *hmm;
 NUMBER* metrics;
 map<string,NCAT> data_map_group_fwd;
@@ -101,42 +103,16 @@ int main (int argc, char ** argv) {
 
 void exit_with_help() {
 	printf(
-		   "Usage: trainhmm [options] input_file [[output_file] predicted_response_file]\n"
+		   "Usage: predicthmm [options] input_file model_file [predicted_response_file]\n"
 		   "options:\n"
-		   "(-s) : structure.solver[.solver setting], structures: 1-by skill, 2-by user,\n"
-           "       5-A by skill and user, Pi,B by skill, 6-Pi,A by skill and user, B by skill;\n"
-           "       solvers: 1-Baum-Welch, 2-Gradient Descent, 3-Conjugate Gradient Descent;\n"
-           "       Conjugate Gradient Descent has 3 setings: 1-Polak-Ribiere, 2-Fletcher–Reeves,\n"
-           "       3-Hestenes-Stiefel.\n"
-           "       For example '-s 1.3.1' would be by skill structure (classical) with Conjugate\n"
-           "       Gradient Descent and Hestenes-Stiefel formula, '-s 2.1' would be by student structure\n"
-           "       fit using Baum-Welch method.\n"
-		   "-e : tolerance (epsilon) of termination criterion (0.01 default)\n"
-		   "-t : reading time from 5th column 0-do not read(default) 1-do read as seconds since epoch.\n"
-		   "-i : maximum iterations (200 by default)\n"
 		   "-q : quiet mode, without output, 0-no (default), or 1-yes\n"
-		   "-n : number of hidden states, should be 2 or more (default 2)\n"
-		   "-0 : initial params (comma-separated), {PI{n-1},A{(n*(n-1)},B{n*(observations-1)}}\n"
-		   "     default 0.5,1.0,0.4,0.8,0.2\n"
-		   "-l : lower boundaries for params (comma-separated), {PI{n},A{n*n},B{n*(observations)}}\n"
-		   "     default 0,0,1,0,0,0,0,0,0,0\n"
-		   "-u : upper boundaries for params (comma-separated), {PI{n},A{n*n},B{n*(observations)}}\n"
-		   "     default 0,0,1,0,0,0,0,0,0,0\n"
-		   "(-c) : weight of the L1 penalty, 0 (default) if not applicable, 1 if applicable\n"
-		   "(-f) : fit as one skill, 0-no (default), 1 - fit as one skill and use params as starting\n"
-           "       point for multi-skill, 2 - force one skill"
-		   "-m : report model fitting metrics (AIC, BIC, RMSE) 0-no (default), 1-yes. To specify observation\n"
-           "     for which metrics to be reported, list it after ';'. For example '-r 0', '-r 1' (by default, \n"
-           "     observation 1 is assumed), '-r1:2' (compute metrics for observation 2). Incompatible with-v option.\n"
-		   "-v : cross-validation folds and target state to validate against, perform subject-stratified\n"
-		   "     cross-validation, default 0 (no cross-validation),\n"
-           "     examples '-v 5;2' - 5 fold, predict state 2, '-v 10' - 10-fold predict state 1 by default.\n"
-           "     Incompatible with -r option.\n"
-		   "-p : report model predictions on the train set 0-no (default), 1-yes; works with any combination of\n"
-           "     -v and -m params.\n"
-		   "-d : multi-skill per observation delimiter 0-sinle skill per observation (default), [delimiter character].\n"
-           "     For example '-d ~'.\n"
-		   "-b : treat input file as binary input file (lookup format specifications in help)\n"
+		   "-m : report model fitting metrics (AIC, BIC, RMSE) 0-no (default), 1-yes. \n"
+           "     To specify observation for which metrics to be reported, list it after\n"
+           "     ';'. For example '-m 1' (by default, observation 1 is assumed),\n"
+           "     '-m 1;2' (compute metrics for observation 2).\n"
+		   "-d : multi-skill per observation delimiter, if absent -single skill per\n"
+           "      observation (default). For example '-d ~'\n"
+		   "-b : treat input file as binary 0-no (default) or 1-yes\n"
 		   );
 	exit(1);
 }
