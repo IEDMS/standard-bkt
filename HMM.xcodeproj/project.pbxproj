@@ -39,6 +39,7 @@
 
 /* Begin PBXFileReference section */
 		715BD81017AB35E700C9B6D3 /* toy_data.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = toy_data.txt; sourceTree = "<group>"; };
+		715BD82117B0118000C9B6D3 /* toy_data_test.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = toy_data_test.txt; sourceTree = "<group>"; };
 		71A39C9F179DAAC6000F9610 /* inputconvert.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = inputconvert.cpp; sourceTree = "<group>"; };
 		71A39CA9179DB04F000F9610 /* inputconvert */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = inputconvert; sourceTree = BUILT_PRODUCTS_DIR; };
 		71AF7DF4176F6C3F000C7E96 /* trainhmmOld */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = trainhmmOld; path = trainhmm; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -90,6 +91,7 @@
 				EB02599C162C61B600442454 /* makefile */,
 				71B056FD17A29AAC007D146C /* readme.txt */,
 				715BD81017AB35E700C9B6D3 /* toy_data.txt */,
+				715BD82117B0118000C9B6D3 /* toy_data_test.txt */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
