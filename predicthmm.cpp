@@ -88,9 +88,10 @@ int main (int argc, char ** argv) {
     hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_multiskill, true/*only unlabelled*/);
 	if(param.quiet == 0)
 		printf("predicting is done in %8.6f seconds\n",(NUMBER)(clock()-tm)/CLOCKS_PER_SEC);
-    if( param.metrics>0 ) {
-        printf("predicted model LL=%15.7f, AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f)\n",metrics[0], metrics[1], metrics[2], metrics[3], metrics[4], metrics[5], metrics[6]);
-    }
+    // THERE IS NO METRICS, WE PREDICT UNKNOWN
+//    if( param.metrics>0 ) {
+//        printf("predicted model LL=%15.7f, AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f)\n",metrics[0], metrics[1], metrics[2], metrics[3], metrics[4], metrics[5], metrics[6]);
+//    }
     free(metrics);
     
 	destroy_input_data(&param);
@@ -106,10 +107,6 @@ void exit_with_help() {
 		   "Usage: predicthmm [options] input_file model_file [predicted_response_file]\n"
            "options:\n"
            "-q : quiet mode, without output, 0-no (default), or 1-yes\n"
-           "-m : report model fitting metrics (AIC, BIC, RMSE) 0-no (default), 1-yes. To \n"
-           "     specify observation for which metrics to be reported, list it after ','.\n"
-           "     For example '-m 0', '-m 1' (by default, observation 1 is assumed), '-m 1,2'\n"
-           "     (compute metrics for observation 2). Incompatible with-v option.\n"
            "-d : delimiter for multiple skills per observation; 0-single skill per\n"
            "     observation (default), otherwise -- delimiter character, e.g. '-d ~'.\n"
            "-b : treat input file as binary input file (specifications TBA).\n"
@@ -136,28 +133,14 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *model_f
 					exit_with_help();
 				}
 				break;
-                //			case 'n':
-                //				param.nS = (NPAR)atoi(argv[i]);
-                //				if(param.nS<2) {
-                //					fprintf(stderr,"ERROR! Number of hidden states should be at least 2\n");
-                //					exit_with_help();
-                //				}
-                //				//fprintf(stdout, "fit single skill=%d\n",param.quiet);
-                //				break;
-			case 'm':
-                param.metrics = atoi( strtok(argv[i],";\t\n\r"));
-                ch = strtok(NULL, "\t\n\r");
-                if(ch!=NULL)
-                    param.metrics_target_obs = atoi(ch)-1;
-				if(param.metrics<0 || param.metrics>1) {
-					fprintf(stderr,"value for -m should be either 0 or 1.\n");
-					exit_with_help();
-				}
-				if(param.metrics_target_obs<0) {// || param.metrics_target_obs>(param.nO-1)) {
-					fprintf(stderr,"target observation to compute metrics against cannot be '%d'\n",param.metrics_target_obs+1);
-					exit_with_help();
-				}
-                break;
+//			case 'n':
+//				param.nS = (NPAR)atoi(argv[i]);
+//				if(param.nS<2) {
+//					fprintf(stderr,"ERROR! Number of hidden states should be at least 2\n");
+//					exit_with_help();
+//				}
+//				//fprintf(stdout, "fit single skill=%d\n",param.quiet);
+//				break;
             case  'd':
 				param.multiskill = argv[i][0]; // just grab first character (later, maybe several)
                 break;
@@ -204,34 +187,19 @@ void read_model(const char *filename) {
 	max_line_length = 1024;
 	line = Malloc(char,max_line_length);
 	NDAT line_no = 0;
+
     //
     // read solver info
     //
     readSolverInfo(fid, &param, &line_no);
     
-    //
-    // create hmm Object
-    //
-//    switch(param.structure)
-//    {
-//        case STRUCTURE_SKILL: // Conjugate Gradient Descent
-//        case STRUCTURE_GROUP: // Conjugate Gradient Descent
-            hmm = new HMMProblem(&param);
-//            break;
-//    }
+    hmm = new HMMProblem(&param);
+
     //
     // read model
     //
     hmm->readModel(fid, &line_no);
     
-	
-    //	k=0;
-    //	map<NCAT,string>::iterator it;
-    //	for(k=0; k<param.nK; k++) {
-    //		it	= model_map_skill_bwd.find(k);
-    //		printf("%d %d %s \n", k, it->first, it->second.c_str());
-    //	}
-	
 	fclose(fid);
 	free(line);
 }
