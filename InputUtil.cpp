@@ -42,10 +42,10 @@ static char* readline(FILE *fid) {
 	if(fgets(line,max_line_length,fid) == NULL)
 		return NULL;
 	
-	while(strrchr(line,'\n') == NULL || strrchr(line,'\r') == NULL) // do take both line endings
+	while(strrchr(line,'\n') == NULL && strrchr(line,'\r') == NULL) // do take both line endings
 	{
 		max_line_length *= 2;
-		line = (char *) realloc(line,max_line_length);
+		line = (char *) realloc(line, (size_t)max_line_length);
 		length = (int) strlen(line);
 		if(fgets(line+length,max_line_length-length,fid) == NULL)
 			break;
@@ -57,26 +57,26 @@ void InputUtil::writeString(FILE *f, string str) {
     // Create char pointer from string.
     char* text = const_cast<char*>(str.c_str());
     // Find the length of the string.
-    unsigned int size = (unsigned int)str.size();
+    NDAT size = (NDAT)str.size();
     // Write the string's size to the file.
-    fwrite(&size, sizeof(unsigned int), 1, f);
+    fwrite(&size, sizeof(NDAT), 1, f);
     // Followed by the string itself.
-    fwrite(text, 1, size, f);
+    fwrite(text, 1, (size_t)size, f);
 }
 
-unsigned long InputUtil::writeMultiSkill(FILE *f, struct param * param) {
+NDAT InputUtil::writeMultiSkill(FILE *f, struct param * param) {
     if(param->multiskill == 0) {
         fprintf(stderr,"Error: multiskill flag should not be 0\n.");
         return 0;
     }
     NCAT * ar;
-    unsigned long all_nwrit = 0;
-    unsigned long nwrit     = 0;
-    for(unsigned int t=0; t<param->N; t++) {
+    NDAT all_nwrit = 0;
+    NDAT nwrit     = 0;
+    for(NDAT t=0; t<param->N; t++) {
         ar = param->dat_multiskill->get(t);
-        nwrit = (unsigned int)fwrite (ar, sizeof(NCAT), ar[0]+1, f);
+        nwrit = (NDAT)fwrite (ar, sizeof(NCAT), (size_t)ar[0]+1, f);
         if(nwrit != ar[0]+1) {
-            fprintf(stderr,"Errr while writing element %d of the multi-skill data. Expected %d, written %lu\n.",t,ar[0]+1,nwrit);
+            fprintf(stderr,"Errr while writing element %d of the multi-skill data. Expected %d, written %u\n.",t,ar[0]+1,nwrit);
             return 0;
         }
         all_nwrit += nwrit;
@@ -84,26 +84,38 @@ unsigned long InputUtil::writeMultiSkill(FILE *f, struct param * param) {
     return all_nwrit;
 }
 
-unsigned long InputUtil::readMultiSkill(FILE *f, struct param * param) {
+NDAT InputUtil::readMultiSkill(FILE *f, struct param * param, char version) {
     if(param->multiskill == 0) {
         fprintf(stderr,"Error: multiskill flag should not be 0\n.");
         return 0;
     }
     NCAT * ar;
+    short * arv1;
     NCAT n;
-    unsigned long all_nread = 0;
-    unsigned long nread     = 0;
-    for(unsigned int t=0; t<param->N; t++) {
+    NDAT all_nread = 0;
+    NDAT nread     = 0;
+    for(NDAT t=0; t<param->N; t++) {
         // read count
-        nread = fread(&n, sizeof(NCAT), 1, f);
+        if(version == 1)
+            nread = (NCAT)fread(&n, sizeof(short), 1, f);
+        else
+            nread = (NDAT)fread(&n, sizeof(NCAT), (size_t)1, f);
         if( nread!= 1) {
             fprintf(stderr,"Error: read a wrong number of datapoints\n.");
             return 0;
         }
-        ar = Calloc(NCAT, n+1);
+        ar = Calloc(NCAT, (size_t)n+1);
         ar[0] = n;
+        if(version==1)
+            arv1 = Calloc(short, (size_t)n+1);;
         // read data
-        nread = fread(&ar[1], sizeof(NCAT), n, f);
+        if(version == 1) {
+            nread = (NCAT)fread(&arv1[1], sizeof(short), (size_t)n, f);
+            for(int i=1;i<(n+1);i++)
+                ar[i] = (NCAT)arv1[i];
+        }
+        else
+            nread = (NDAT)fread(&ar[1], sizeof(NCAT), (size_t)n, f);
         if( nread!= n) {
             fprintf(stderr,"Error: read a wrong number of datapoints\n.");
             return 0;
@@ -119,17 +131,17 @@ string InputUtil::readString(FILE *f) {
     // Create new string object to store the retrieved text and to return to the calling function.
     string str;
     // UInt for storing the string's size.
-    unsigned int size;
+    NDAT size;
     // Read the size of the string from the file and store it in size.
-    fread(&size, sizeof(unsigned int), 1, f);
+    fread(&size, sizeof(NDAT), 1, f);
     // Create a char pointer for temporary storage.
     char* text = new char[size];
     // Read [size] number of characters from the string and store them in text.
-    fread(text, 1, size, f);
+    fread(text, 1, (size_t)size, f);
     // Store the contents of text in str.
     str = text;
     // Resize str to match the size else we get extra cruft (line endings methinks).
-    str.resize(size);
+    str.resize((size_t)size);
     // Finally, return the string to the calling function.
     delete[] text;
     return str;
@@ -147,7 +159,7 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 	char *col;
     
 	// count lines and check for number of columns
-	line = (char *)malloc(max_line_length);// Malloc(char,max_line_length);
+	line = (char *)malloc((size_t)max_line_length);// Malloc(char,max_line_length);
 	
 	// grab memory and read all data
 	param->dat_obs   = new StripedArray<NPAR>();
@@ -156,19 +168,19 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
         param->dat_skill = new StripedArray<NCAT>();
     else
         param->dat_multiskill = new StripedArray< NCAT* >(true);
-	param->dat_item = new StripedArray<NCAT2>();
+	param->dat_item = new StripedArray<NCAT>();
     if(param->time)
         param->dat_time = new StripedArray<int>();
     param->map_group_fwd = new map<string,NCAT>();
     param->map_group_bwd = new map<NCAT,string>();
     param->map_skill_fwd = new map<string,NCAT>();
     param->map_skill_bwd = new map<NCAT,string>();
-    param->map_step_fwd = new map<string,NCAT2>();
-    param->map_step_bwd = new map<NCAT2,string>();
+    param->map_step_fwd = new map<string,NCAT>();
+    param->map_step_bwd = new map<NCAT,string>();
 	string s_group, s_step, s_skill;
     int time = 0;
 	map<string,NCAT>::iterator it;
-	map<string,NCAT2>::iterator it2;
+	map<string,NCAT>::iterator it2;
 	bool wrong_no_columns = false;
     param->N = 0;
     param->N_null = 0;
@@ -204,7 +216,7 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 				fprintf(stderr,"Number of unique groups exceeds allowed maximum of %d.\n",NCAT_MAX);
 				return false;
 			}
-			NCAT newg = param->map_group_fwd->size();
+			NCAT newg = (NCAT)param->map_group_fwd->size();
 			param->dat_group->add(newg); //[t] = param->map_group_fwd.size();
 			param->map_group_fwd->insert(pair<string,NCAT>(s_group, newg));
 			param->map_group_bwd->insert(pair<NCAT,string>(newg, s_group));
@@ -223,14 +235,14 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 		s_step = string( col );
 		it2 = param->map_step_fwd->find(s_step);
 		if( it2==param->map_step_fwd->end() ) { // not found
-			if(param->map_step_fwd->size()==NCAT2_MAX) {
-				fprintf(stderr,"Number of unique steps exceeds allowed maximum of %d.\n",NCAT2_MAX);
+			if(param->map_step_fwd->size()==NCAT_MAX) {
+				fprintf(stderr,"Number of unique steps exceeds allowed maximum of %d.\n",NCAT_MAX);
 				return false;
 			}
-            NCAT2 news = param->map_step_fwd->size();
+            NCAT news = (NCAT)param->map_step_fwd->size();
 			param->dat_item->add(news); //[t] = param->map_group_fwd.size();
-			param->map_step_fwd->insert(pair<string,NCAT2>(s_step, news));
-			param->map_step_bwd->insert(pair<NCAT2,string>(news, s_step));
+			param->map_step_fwd->insert(pair<string,NCAT>(s_step, news));
+			param->map_step_bwd->insert(pair<NCAT,string>(news, s_step));
 		}
 		else
             param->dat_item->add(it2->second);
@@ -291,9 +303,9 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
                             fprintf(stderr,"Number of unique skills exceeds allowed maximum of %d.\n",NCAT_MAX);
                             return false;
                         }
-                        a_skills.insert(a_skills.end(), param->map_skill_fwd->size()); //dat_skill->add(param->map_skill_fwd->size());
-                        param->map_skill_fwd->insert(pair<string,NCAT>(s_kc, param->map_skill_fwd->size()));
-                        param->map_skill_bwd->insert(pair<NCAT,string>(param->map_skill_bwd->size(),s_kc));
+                        a_skills.insert(a_skills.end(), (NCAT)param->map_skill_fwd->size()); //dat_skill->add(param->map_skill_fwd->size());
+                        param->map_skill_fwd->insert(pair<string,NCAT>(s_kc, (NCAT)param->map_skill_fwd->size()));
+                        param->map_skill_bwd->insert(pair<NCAT,string>((NCAT)param->map_skill_bwd->size(),s_kc));
                     }
                     else
                         a_skills.insert(a_skills.end(), it->second); //dat_skill->add(it->second); //[t] = it->second;
@@ -301,7 +313,7 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
                     a_kc  = strtok(NULL,"~\n\r");
                 }
                 NCAT *b_skills = Malloc(NCAT, a_skills.size()+1);
-                b_skills[0] = a_skills.size();
+                b_skills[0] = (NCAT)a_skills.size();
                 int count = 0;
                 for(list<NCAT>::iterator it=a_skills.begin(); it!=a_skills.end(); it++)
                     b_skills[++count] = *it;
@@ -315,9 +327,9 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
                         fprintf(stderr,"Number of unique skills exceeds allowed maximum of %d.\n",NCAT_MAX);
                         return false;
                     }
-                    param->dat_skill->add(param->map_skill_fwd->size()); //[t] = param->map_skill_fwd.size();
-                    param->map_skill_fwd->insert(pair<string,NCAT>(s_skill, param->map_skill_fwd->size()));
-                    param->map_skill_bwd->insert(pair<NCAT,string>(param->map_skill_bwd->size(),s_skill));
+                    param->dat_skill->add((NCAT)param->map_skill_fwd->size()); //[t] = param->map_skill_fwd.size();
+                    param->map_skill_fwd->insert(pair<string,NCAT>(s_skill, (NCAT)param->map_skill_fwd->size()));
+                    param->map_skill_bwd->insert(pair<NCAT,string>((NCAT)param->map_skill_bwd->size(),s_skill));
                 }
                 else
                     param->dat_skill->add(it->second); //[t] = it->second;
@@ -326,6 +338,9 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
         
 		// count lines
 		param->N++;	// increase line count
+//        if(param->N % 100000 == 0) {
+//            fprintf(stdout,"%d rows read\n",param->N);
+//        }
         //        fprintf(stdout,"Line %d\n",param->N);
 	}// reading loop
 	if(wrong_no_columns) {
@@ -336,98 +351,125 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 	}
 	param->nG = (NCAT)param->map_group_fwd->size();
 	param->nK = (NCAT)param->map_skill_fwd->size();
-	param->nI = (NCAT2)param->map_step_fwd->size();
+	param->nI = (NCAT)param->map_step_fwd->size();
 	fclose(fid);
 	free(line);
     return true;
 }
 
 bool InputUtil::readBin(const char *fn, struct param * param) {
-    char c;
-    unsigned int i;
-    unsigned long nread;
+    char c, v/*version*/;
+    NDAT i;
+    NDAT nread;
     FILE *fid = fopen(fn,"rb");
+    NDAT t;
     
     // version
-    nread = fread (&c, sizeof(char), 1, fid);
+    nread = (NDAT)fread (&v, sizeof(char), (size_t)1, fid);
     if(nread != 1) {
         fprintf(stderr,"Error reading version data from %s\n",fn);
         return false;
     }
-    if( c != bin_input_file_verstion) {
-        fprintf(stderr,"Wrong version of the data file. Expected %c, actual %c\n",(int)bin_input_file_verstion, c);
+    if( v > bin_input_file_verstion) { // we will handle earlier versions
+        fprintf(stderr,"Wrong version of the data file. Expected %d, actual %d\n",(int)bin_input_file_verstion, (int)v);
         return false;
     }
     
     // N
-    nread = fread (&i, sizeof(unsigned int), 1, fid);
+    nread = (NDAT)fread (&i, sizeof(NDAT), (size_t)1, fid);
     if(nread != 1) {
         fprintf(stderr,"Error reading N from %s\n",fn);
         return false;
     }
-    param->N = i;
+    param->N = (NDAT)i;
     
     // N_null
-    nread = fread (&i, sizeof(unsigned int), 1, fid);
+    nread = (NDAT)fread (&i, sizeof(NDAT), (size_t)1, fid);
     if(nread != 1) {
         fprintf(stderr,"Error reading N_null from %s\n",fn);
         return false;
     }
-    param->N_null = i;
+    param->N_null = (NDAT)i;
     
     // nO
-    nread = fread (&i, sizeof(unsigned int), 1, fid);
+    nread = (NDAT)fread (&i, sizeof(NDAT), (size_t)1, fid);
     if(nread != 1) {
         fprintf(stderr,"Error reading nO from %s\n",fn);
         return false;
     }
-    param->nO = i;
+    param->nO = (NPAR)i;
     
     // nG
-    nread = fread (&i, sizeof(unsigned int), 1, fid);
+    nread = (NDAT)fread (&i, sizeof(NDAT), (size_t)1, fid);
     if(nread != 1) {
         fprintf(stderr,"Error reading nG from %s\n",fn);
         return false;
     }
-    param->nG = i;
+    param->nG = (NCAT)i;
     
     // nI
-    nread = fread (&i, sizeof(unsigned int), 1, fid);
+    nread = (NDAT)fread (&i, sizeof(NDAT), (size_t)1, fid);
     if(nread != 1) {
         fprintf(stderr,"Error reading nI from %s\n",fn);
         return false;
     }
-    param->nI = i;
+    param->nI = (NCAT)i;
     
     // nK
-    nread = fread (&i, sizeof(unsigned int), 1, fid);
+    nread = (NDAT)fread (&i, sizeof(NDAT), (size_t)1, fid);
     if(nread != 1) {
         fprintf(stderr,"Error reading nK from %s\n",fn);
         return false;
     }
-    param->nK = i;
+    param->nK = (NCAT)i;
     
     // multiskill
-    nread = fread (&c, sizeof(char), 1, fid);
+    nread = (NDAT)fread (&c, sizeof(char), (size_t)1, fid);
     if(nread != 1) {
         fprintf(stderr,"Error reading multiskill flag from %s\n",fn);
         return false;
     }
-    param->multiskill = c;
+    param->multiskill = (NPAR)c;
+    
     
     // dat_obs
     param->dat_obs = new StripedArray<NPAR>(fid, param->N);
-    // dat_group
-    param->dat_group = new StripedArray<NCAT>(fid, param->N);
-    // dat_skill
-    if(param->multiskill == 0)
-        param->dat_skill = new StripedArray<NCAT>(fid, param->N);
-    else {
-        param->dat_multiskill = new StripedArray< NCAT* >(param->N,true);
-        nread = readMultiSkill(fid, param);
+    
+    if(v==1) { // older NCAT of unsigned short
+        StripedArray<short> *dat_group_legacy = NULL;
+        StripedArray<short> *dat_skill_legacy = NULL;
+        StripedArray<short*> *dat_multiskill_legacy = NULL;
+        dat_group_legacy = new StripedArray<short>(fid, param->N);
+        param->dat_group = new StripedArray<NCAT>(param->N, false);
+        for(t=0; t<param->N; t++)
+            param->dat_group->set(t, (NCAT)dat_group_legacy->get(t) );
+        if(param->multiskill == 0) {
+            dat_skill_legacy = new StripedArray<short>(fid, param->N);
+            param->dat_skill = new StripedArray<NCAT>(param->N,false);
+            for(t=0; t<param->N; t++)
+                param->dat_skill->set(t, (NCAT)dat_skill_legacy->get(t) );
+        }
+        else {
+            param->dat_multiskill = new StripedArray<NCAT*>(param->N,true);
+            nread = readMultiSkill(fid, param, v);
+        }
+        delete dat_group_legacy;
+        if(dat_skill_legacy!=NULL) delete dat_skill_legacy;
+        if(dat_multiskill_legacy!=NULL) delete dat_multiskill_legacy;
+    } else {
+        // dat_group
+        param->dat_group = new StripedArray<NCAT>(fid, param->N);
+        // dat_skill
+        if(param->multiskill == 0)
+            param->dat_skill = new StripedArray<NCAT>(fid, param->N);
+        else {
+            param->dat_multiskill = new StripedArray< NCAT* >(param->N,true);
+            nread = readMultiSkill(fid, param, v);
+        }
     }
+    
     // dat_item
-    param->dat_item = new StripedArray<NCAT2>(fid, param->N);
+    param->dat_item = new StripedArray<NCAT>(fid, param->N);
     
     
     string str;
@@ -435,8 +477,8 @@ bool InputUtil::readBin(const char *fn, struct param * param) {
     param->map_group_bwd = new map<NCAT,string>();
     param->map_skill_fwd = new map<string,NCAT>();
     param->map_skill_bwd = new map<NCAT,string>();
-    param->map_step_fwd = new map<string,NCAT2>();
-    param->map_step_bwd = new map<NCAT2,string>();
+    param->map_step_fwd = new map<string,NCAT>();
+    param->map_step_bwd = new map<NCAT,string>();
     // voc_group
     for(NCAT g=0; g<param->nG; g++) {
         str = readString(fid);
@@ -452,15 +494,10 @@ bool InputUtil::readBin(const char *fn, struct param * param) {
     }
     
     // voc_item
-    for(NCAT2 i=0; i<param->nI; i++) {
+    for(NCAT i=0; i<param->nI; i++) {
         str = readString(fid);
-        param->map_step_fwd->insert(pair<string,NCAT2>(str, i));
-        param->map_step_bwd->insert(pair<NCAT2,string>(i, str));
-    }
-    map<NCAT2,string>::iterator it2;
-    for (it2 =  param->map_step_bwd->begin(); it2 != param->map_step_bwd->end(); ++it2) {
-        // fprintf(stderr,"key: %u, value: %s\n",it2->first, it2->second.c_str());
-        fwrite (it2->second.c_str() , sizeof(std::string), 1, fid);
+        param->map_step_fwd->insert(pair<string,NCAT>(str, i));
+        param->map_step_bwd->insert(pair<NCAT,string>(i, str));
     }
     
     fclose(fid);
@@ -470,19 +507,19 @@ bool InputUtil::readBin(const char *fn, struct param * param) {
 /*
  * File format:
  *  - version number: char 1:...
- *  - N : unsigned int 1...
- *  - N_null : unsigned int 0...
- *  - nO : unsigned int 1...
- *  - nG : unsigned int 1...
- *  - nI : unsigned int 1...
- *  - nK : unsigned int 1...
+ *  - N : NDAT 1...
+ *  - N_null : NDAT 0...
+ *  - nO : NDAT 1...
+ *  - nG : NDAT 1...
+ *  - nI : NDAT 1...
+ *  - nK : NDAT 1...
  *  - multiskill : char (0, 1)
  *  - dat_obs : char * N
- *  - dat_group : unsigned int * N
+ *  - dat_group : NDAT * N
  *  - dat_skill :
- *      a) single skill: unsigned int * N
- *      b) multiple skill: unsigned int * N * skills' (' variable)
- *  - dat_item : unsigned int * N
+ *      a) single skill: NDAT * N
+ *      b) multiple skill: NDAT * N * skills' (' variable)
+ *  - dat_item : NDAT * N
  *  - voc_group : string * nG : ordered by 1:nG
  *  - voc_skill : string * nK : ordered by 1:nK
  *  - voc_item  : string * nI : ordered by 1:nI
@@ -490,7 +527,7 @@ bool InputUtil::readBin(const char *fn, struct param * param) {
 
 bool InputUtil::toBin(struct param * param, const char *fn) {
     char c;
-    unsigned int i;
+    NDAT i;
     FILE *fid = fopen(fn,"wb");
 
     // version
@@ -499,33 +536,33 @@ bool InputUtil::toBin(struct param * param, const char *fn) {
     
     // N
     i = param->N;
-    fwrite (&i , sizeof(unsigned int), 1, fid);
+    fwrite (&i , sizeof(NDAT), 1, fid);
 
     // N_null
     i = param->N_null;
-    fwrite (&i , sizeof(unsigned int), 1, fid);
+    fwrite (&i , sizeof(NDAT), 1, fid);
     
     // nO
     i = param->nO;
-    fwrite (&i , sizeof(unsigned int), 1, fid);
+    fwrite (&i , sizeof(NDAT), 1, fid);
     
     // nG
     i = param->nG;
-    fwrite (&i , sizeof(unsigned int), 1, fid);
+    fwrite (&i , sizeof(NDAT), 1, fid);
     
     // nI
     i = param->nI;
-    fwrite (&i , sizeof(unsigned int), 1, fid);
+    fwrite (&i , sizeof(NDAT), 1, fid);
     
     // nK
     i = param->nK;
-    fwrite (&i , sizeof(unsigned int), 1, fid);
+    fwrite (&i , sizeof(NDAT), 1, fid);
     
     // multiskill
     c = param->multiskill;
     fwrite (&c , sizeof(char), 1, fid);
     
-    unsigned long nwrit;
+    NDAT nwrit;
     // dat_obs
     nwrit = param->dat_obs->toBinFile(fid);
     // dat_group
@@ -541,20 +578,16 @@ bool InputUtil::toBin(struct param * param, const char *fn) {
     map<NCAT,string>::iterator it;
     // voc_group
     for (it = param->map_group_bwd->begin(); it != param->map_group_bwd->end(); ++it) {
-        // fprintf(stderr,"key: %u, value: %s\n",it->first, it->second.c_str());
         writeString(fid, it->second);
     }
 
     // voc_skill
     for (it = param->map_skill_bwd->begin(); it != param->map_skill_bwd->end(); ++it) {
-        // fprintf(stderr,"key: %u, value: %s\n",it->first, it->second.c_str());
         writeString(fid, it->second);
     }
     
     // voc_item
-    map<NCAT2,string>::iterator it2;
-    for (it2 =  param->map_step_bwd->begin(); it2 != param->map_step_bwd->end(); ++it2) {
-        // fprintf(stderr,"key: %u, value: %s\n",it2->first, it2->second.c_str());
+    for (it =  param->map_step_bwd->begin(); it != param->map_step_bwd->end(); ++it) {
         writeString(fid, it->second);
     }
     

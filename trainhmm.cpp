@@ -43,13 +43,9 @@
 using namespace std;
 
 struct param param;
-static char *line = NULL;
-static int max_line_length;
-
 void exit_with_help();
 void parse_arguments(int argc, char **argv, char *input_file_name, char *output_file_name, char *predict_file_name);
-bool read_train_data(const char *filename);
-static char* readline(FILE *fid);
+bool read_and_structure_data(const char *filename);
 void cross_validate(NUMBER* metrics, const char *filename);
 void cross_validate_item(NUMBER* metrics, const char *filename);
 void cross_validate_nstrat(NUMBER* metrics, const char *filename);
@@ -67,7 +63,7 @@ int main (int argc, char ** argv) {
     
     if(!param.quiet)
         printf("trainhmm starting...\n");
-	bool is_data_read = read_train_data(input_file);
+	bool is_data_read = read_and_structure_data(input_file);
     
     if( is_data_read ) {
         if(!param.quiet)
@@ -100,11 +96,7 @@ int main (int argc, char ** argv) {
             
             if(param.metrics>0 || param.predictions>0) {
                 NUMBER* metrics = Calloc(NUMBER, 7); // LL, AIC, BIC, RMSE, RMSEnonull, Acc, Acc_nonull;
-                if(param.predictions>0) {
-                    hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_multiskill, false/*all, not only unlabelled*/);
-                } else {
-                    hmm->computeMetrics(metrics);
-                }
+                hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_multiskill, false/*all, not only unlabelled*/);
                 if( param.metrics>0 && !param.quiet) {
                     printf("trained model LL=%15.7f, AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f)\n",metrics[0], metrics[1], metrics[2], metrics[3], metrics[4], metrics[5], metrics[6]);
                 }
@@ -180,25 +172,10 @@ void exit_with_help() {
            "-d : delimiter for multiple skills per observation; 0-single skill per\n"
            "     observation (default), otherwise -- delimiter character, e.g. '-d ~'.\n"
            "-b : treat input file as binary input file (specifications TBA).\n"
+           "-B : Block PI (prior), A (transition), or B (observation) parameters from being\n"
+           "     fit. E.g., '-B 0,0,0 (default) blocks none, '-B 1,0,0' blocks PI (priors).\n"
 		   );
 	exit(1);
-}
-
-static char* readline(FILE *fid) {
-	int length = 0;
-	
-	if(fgets(line,max_line_length,fid) == NULL)
-		return NULL;
-	
-	while(strrchr(line,'\n') == NULL)
-	{
-		max_line_length *= 2;
-		line = (char *) realloc(line,max_line_length);
-		length = (int) strlen(line);
-		if(fgets(line+length,max_line_length-length,fid) == NULL)
-			break;
-	}
-	return line;
 }
 
 void parse_arguments(int argc, char **argv, char *input_file_name, char *output_file_name, char *predict_file_name) {
@@ -226,7 +203,7 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 				}
 				break;
 			case 't':
-				param.time = atof(argv[i]);
+				param.time = (NPAR)atoi(argv[i]);
 				if(param.time!=0 && param.time!=1) {
 					fprintf(stderr,"ERROR! Time parameter should be either 0 (off) or 1(om)\n");
 					exit_with_help();
@@ -240,7 +217,7 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 				}
 				break;
 			case 'q':
-				param.quiet = atoi(argv[i]);
+				param.quiet = (NPAR)atoi(argv[i]);
 				if(param.quiet!=0 && param.quiet!=1) {
 					fprintf(stderr,"ERROR! Quiet param should be 0 or 1\n");
 					exit_with_help();
@@ -291,15 +268,22 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 				len = (int)strlen( argv[i] );
 				// count delimiters
 				n = 1; // start with 1
-				for(int j=0;j<len;j++)
+				for(int j=0;j<len;j++) {
 					n += (argv[i][j]==',')?(NPAR)1:(NPAR)0;
-				// init params
-				free(param.init_params);
-				param.init_params = Calloc(NUMBER, n);
-				// read params and write to params
-				param.init_params[0] = atof( strtok(argv[i],",\t\n\r") );
-				for(int j=1; j<n; j++)
-					param.init_params[j] = atof( strtok(NULL,",\t\n\r") );
+                    if( (argv[i][j] >= 'a' && argv[i][j] <= 'z') || (argv[i][j] >= 'A' && argv[i][j] <= 'Z') ) {
+                        strcpy(param.initfile, argv[i]);
+                        break;
+                    }
+                }
+                if(param.initfile[0]==0) { // init parameters parameters
+                    // init params
+                    free(param.init_params);
+                    param.init_params = Calloc(NUMBER, (size_t)n);
+                    // read params and write to params
+                    param.init_params[0] = atof( strtok(argv[i],",\t\n\r") );
+                    for(int j=1; j<n; j++)
+                        param.init_params[j] = atof( strtok(NULL,",\t\n\r") );
+                }
 				break;
 			case 'l': // lower poundaries
 				len = (int)strlen( argv[i] );
@@ -309,7 +293,7 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 					n += (argv[i][j]==',')?(NPAR)1:(NPAR)0;
 				// init params
 				free(param.param_lo);
-				param.param_lo = Calloc(NUMBER, n);
+				param.param_lo = Calloc(NUMBER, (size_t)n);
 				// read params and write to params
 				param.param_lo[0] = atof( strtok(argv[i],",\t\n\r") );
 				for(int j=1; j<n; j++)
@@ -323,11 +307,45 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 					n += (argv[i][j]==',')?(NPAR)1:(NPAR)0;
 				// init params
 				free(param.param_hi);
-				param.param_hi = Calloc(NUMBER, n);
+				param.param_hi = Calloc(NUMBER, (size_t)n);
 				// read params and write to params
 				param.param_hi[0] = atof( strtok(argv[i],",\t\n\r") );
 				for(int j=1; j<n; j++)
 					param.param_hi[j] = atof( strtok(NULL,",\t\n\r") );
+				break;
+			case 'B': // block fitting
+                // first
+				param.block_fitting[0] = (NPAR)atoi( strtok(argv[i],",\t\n\r") );
+                if(param.block_fitting[0]!=0 && param.block_fitting[0]!=1) {
+                    fprintf(stderr,"Values of blocking the fitting flags shuld only be 0 or 1.\n");
+                    exit_with_help();
+                }
+                // second
+                ch = strtok(NULL,",\t\n\r"); // could be NULL (default GD solver)
+                if(ch != NULL) {
+                    param.block_fitting[1] = (NPAR)atoi(ch);
+                    if(param.block_fitting[1]!=0 && param.block_fitting[1]!=1) {
+                        fprintf(stderr,"Values of blocking the fitting flags shuld only be 0 or 1.\n");
+                        exit_with_help();
+                    }
+                }
+                else {
+                    fprintf(stderr,"There should be 3 blockig the fitting flags specified.\n");
+                    exit_with_help();
+                }
+                // third
+                ch = strtok(NULL,",\t\n\r"); // could be NULL (default GD solver)
+                if(ch != NULL) {
+                    param.block_fitting[2] = (NPAR)atoi(ch);
+                    if(param.block_fitting[2]!=0 && param.block_fitting[2]!=1) {
+                        fprintf(stderr,"Values of blocking the fitting flags shuld only be 0 or 1.\n");
+                        exit_with_help();
+                    }
+                }
+                else {
+                    fprintf(stderr,"There should be 3 blockig the fitting flags specified.\n");
+                    exit_with_help();
+                }
 				break;
 			case 'c':
 				param.C = atof(argv[i]);
@@ -423,13 +441,14 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 	}
 }
 
-bool read_train_data(const char *filename) {
-    bool success;
-    if(param.binaryinput==0) {
-        success = InputUtil::readTxt(filename, &param);
-    } else {
-        success = InputUtil::readBin(filename, &param);
-    }
+bool read_and_structure_data(const char *filename) {
+    bool readok = true;
+    if(param.binaryinput==0)
+        readok = InputUtil::readTxt(filename, &param);
+    else
+        readok = InputUtil::readBin(filename, &param);
+    if(! readok )
+        return false;
     
 	//	2. distribute data into nK skill bins
 	//		create
@@ -441,10 +460,10 @@ bool read_train_data(const char *filename) {
 	NCAT g, k;
 	NPAR o;
 	NPAR **skill_group_map = init2D<NPAR>(param.nK, param.nG); // binary map of skills to groups
-	param.k_numg = Calloc(NCAT, param.nK);
-	param.g_numk = Calloc(NCAT, param.nG);
-    NDAT *count_null_skill_group = Calloc(NDAT, param.nG); // count null skill occurences per group
-    NCAT *index_null_skill_group = Calloc(NCAT, param.nG); // index of group in compressed array
+	param.k_numg = Calloc(NCAT, (size_t)param.nK);
+	param.g_numk = Calloc(NCAT, (size_t)param.nG);
+    NDAT *count_null_skill_group = Calloc(NDAT, (size_t)param.nG); // count null skill occurences per group
+    NCAT *index_null_skill_group = Calloc(NCAT, (size_t)param.nG); // index of group in compressed array
     
 	// Pass A
 	for(t=0; t<param.N; t++) {
@@ -479,26 +498,26 @@ bool read_train_data(const char *filename) {
         }
 	}
     for(k=0; k<param.nK; k++) param.nSeq += param.k_numg[k];
-    param.all_data = Calloc(struct data, param.nSeq);
+    param.all_data = Calloc(struct data, (size_t)param.nSeq);
     
 	// Section B
-	param.k_g_data = Malloc(struct data **, param.nK);
-	param.k_data = Malloc(struct data *, param.nSeq);
+	param.k_g_data = Malloc(struct data **, (size_t)param.nK);
+	param.k_data = Malloc(struct data *, (size_t)param.nSeq);
     //	for(k=0; k<param.nK; k++)
     //		param.k_g_data[k] = Calloc(struct data*, param.k_numg[k]);
-	param.g_k_data = Calloc(struct data **, param.nG);
-	param.g_data = Malloc(struct data *, param.nSeq);
+	param.g_k_data = Calloc(struct data **, (size_t)param.nG);
+	param.g_data = Malloc(struct data *, (size_t)param.nSeq);
     //	for(g=0; g<param.nG; g++)
     //		param.g_k_data[g] = Calloc(struct data*, param.g_numk[g]);
-	param.null_skills = Malloc(struct data, param.n_null_skill_group);
+	param.null_skills = Malloc(struct data, (size_t)param.n_null_skill_group);
     // index compressed array of null-skill-BY-group
     NCAT idx = 0;
 	for(g=0; g<param.nG; g++)
         if( count_null_skill_group[g] >0 ) index_null_skill_group[g] = idx++;
     
 	// Pass C
-	NDAT *k_countg = Calloc(NDAT, param.nK); // track current group in skill
-	NDAT *g_countk = Calloc(NDAT, param.nG); // track current skill in group
+	NDAT *k_countg = Calloc(NDAT, (size_t)param.nK); // track current group in skill
+	NDAT *g_countk = Calloc(NDAT, (size_t)param.nG); // track current skill in group
     // set k_countg and g_countk pointers to relative positions
     NDAT sumk=0, sumg=0;
     for(k=0; k<param.nK; k++) {
@@ -536,10 +555,10 @@ bool read_train_data(const char *filename) {
                 param.null_skills[gidx].g = g;
                 param.null_skills[gidx].cnt = 0;
                 //                param.null_skills[gidx].obs = Calloc(NPAR, count_null_skill_group[g]);
-                param.null_skills[gidx].ix = Calloc(NDAT, count_null_skill_group[g]);
+                param.null_skills[gidx].ix = Calloc(NDAT, (size_t)count_null_skill_group[g]);
                 // no time for null skills is necessary
                 //                if(param.time)
-                //                    param.null_skills[gidx].time = Calloc(int, count_null_skill_group[g]);
+                //                    param.null_skills[gidx].time = Calloc(int, (size_t)count_null_skill_group[g]);
                 param.null_skills[gidx].alpha = NULL;
                 param.null_skills[gidx].beta = NULL;
                 param.null_skills[gidx].gamma = NULL;
@@ -594,8 +613,8 @@ bool read_train_data(const char *filename) {
     //		pass A
     //			fill k_g_data.data (g_k_data is already linked)
     //				using skill_group_map as marker, 3 - data grabbed
-	k_countg = Calloc(NDAT, param.nK); // track current group in skill
-	g_countk = Calloc(NDAT, param.nG); // track current skill in group
+	k_countg = Calloc(NDAT, (size_t)param.nK); // track current group in skill
+	g_countk = Calloc(NDAT, (size_t)param.nG); // track current skill in group
 	for(t=0; t<param.N; t++) {
 		g = param.dat_group->get(t);
 		o = param.dat_obs->get(t);
@@ -622,9 +641,9 @@ bool read_train_data(const char *filename) {
             if( skill_group_map[k][g]<2)
                 printf("ERROR! position [%d,%d] in skill_group_map should have been 2\n",k,g);
             else if( skill_group_map[k][g]==2 ) { // grab data and insert first dat point
-                param.k_g_data[k][ k_countg[k] ]->ix = Calloc(NDAT, param.k_g_data[k][ k_countg[k] ]->n); // grab
+                param.k_g_data[k][ k_countg[k] ]->ix = Calloc(NDAT, (size_t)param.k_g_data[k][ k_countg[k] ]->n); // grab
                 if(param.time)
-                    param.k_g_data[k][ k_countg[k] ]->time = Calloc(int, param.k_g_data[k][ k_countg[k] ]->n); // grab
+                    param.k_g_data[k][ k_countg[k] ]->time = Calloc(int, (size_t)param.k_g_data[k][ k_countg[k] ]->n); // grab
                 param.k_g_data[k][ k_countg[k] ]->ix[0] = t; // insert
                 if(param.time)
                     param.k_g_data[k][ k_countg[k] ]->time[0] = tm; // insert
@@ -669,7 +688,7 @@ void cross_validate(NUMBER* metrics, const char *filename) {
     NUMBER rmse_no_null = 0.0, accuracy = 0.0, accuracy_no_null = 0.0;
     NPAR f;
     NCAT g,k;
-    FILE *fid; // file for storing prediction should that be necessary
+    FILE *fid = NULL; // file for storing prediction should that be necessary
     if(param.predictions>0) {  // if we have to write the predictions file
         fid = fopen(filename,"w");
         if(fid == NULL)
@@ -679,7 +698,7 @@ void cross_validate(NUMBER* metrics, const char *filename) {
         }
     }
     // produce folds
-    NPAR *folds = Calloc(NPAR, param.nG);//[param.nG];
+    NPAR *folds = Calloc(NPAR, (size_t)param.nG);//[param.nG];
     srand ( (unsigned int)time(NULL) );
     for(g=0; g<param.nG; g++) folds[g] = rand() % param.cv_folds;
     // create and fit multiple problems
@@ -720,7 +739,7 @@ void cross_validate(NUMBER* metrics, const char *filename) {
         if(q == 0)
             printf("fold %d is done\n",f+1);
     }
-    param.quiet = q;
+    param.quiet = (NPAR)q;
     // go trhough original data and predict
 	NDAT t;
 	NPAR i, j, m, o, isTarget;
@@ -828,9 +847,9 @@ void cross_validate_item(NUMBER* metrics, const char *filename) {
     NUMBER rmse = 0.0, rmse_no_null = 0.0, accuracy = 0.0, accuracy_no_null = 0.0;
     NPAR f;
     NCAT g,k;
-    NCAT2 I; // item
+    NCAT I; // item
     NDAT t;
-    FILE *fid; // file for storing prediction should that be necessary
+    FILE *fid = NULL; // file for storing prediction should that be necessary
     if(param.predictions>0) {  // if we have to write the predictions file
         fid = fopen(filename,"w");
         if(fid == NULL)
@@ -840,9 +859,9 @@ void cross_validate_item(NUMBER* metrics, const char *filename) {
         }
     }
     // produce folds
-    NPAR *folds = Calloc(NPAR, param.nI);
-    NDAT *fold_counts = Calloc(NDAT, param.cv_folds);
-    //    NDAT *fold_shortcounts = Calloc(NDAT, param.cv_folds);
+    NPAR *folds = Calloc(NPAR, (size_t)param.nI);
+    NDAT *fold_counts = Calloc(NDAT, (size_t)param.cv_folds);
+    //    NDAT *fold_shortcounts = Calloc(NDAT, (size_t)param.cv_folds);
     srand ( (unsigned int)time(NULL) ); // randomize
     for(I=0; I<param.nI; I++) folds[I] = rand() % param.cv_folds; // produce folds
     // count number of items in each fold
@@ -861,7 +880,7 @@ void cross_validate_item(NUMBER* metrics, const char *filename) {
 //                break;
 //        }
         // block respective data - do not fit the data belonging to the fold
-        NPAR *saved_obs = Calloc(NPAR, fold_counts[f]);
+        NPAR *saved_obs = Calloc(NPAR, (size_t)fold_counts[f]);
         NDAT count_saved = 0;
         for(t=0; t<param.N; t++) {
             if( folds[ param.dat_item->get(t) ] == f ) {
@@ -882,7 +901,7 @@ void cross_validate_item(NUMBER* metrics, const char *filename) {
             printf("fold %d is done\n",f+1);
     }
     free(fold_counts);
-    param.quiet = q;
+    param.quiet = (NPAR)q;
     // go trhough original data and predict
 	NPAR i, j, m, o, isTarget;
 	NUMBER *local_pred = init1D<NUMBER>(param.nO); // local prediction
@@ -984,9 +1003,9 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename) {
     NUMBER rmse_no_null = 0.0, accuracy = 0.0, accuracy_no_null = 0.0;
     NPAR f;
     NCAT g,k;
-    NCAT2 I; // item
+    NCAT I; // item
     NDAT t;
-    FILE *fid; // file for storing prediction should that be necessary
+    FILE *fid = NULL; // file for storing prediction should that be necessary
     if(param.predictions>0) {  // if we have to write the predictions file
         fid = fopen(filename,"w");
         if(fid == NULL)
@@ -996,9 +1015,9 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename) {
         }
     }
     // produce folds
-    NPAR *folds = Calloc(NPAR, param.nI);
-    NDAT *fold_counts = Calloc(NDAT, param.cv_folds);
-    //    NDAT *fold_shortcounts = Calloc(NDAT, param.cv_folds);
+    NPAR *folds = Calloc(NPAR, (size_t)param.nI);
+    NDAT *fold_counts = Calloc(NDAT, (size_t)param.cv_folds);
+    //    NDAT *fold_shortcounts = Calloc(NDAT, (size_t)param.cv_folds);
     srand ( (unsigned int)time(NULL) ); // randomize
     for(I=0; I<param.nI; I++) folds[I] = rand() % param.cv_folds; // produce folds
     // count number of items in each fold
@@ -1016,7 +1035,7 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename) {
 //                break;
 //        }
         // block respective data - do not fit the data belonging to the fold
-        NPAR *saved_obs = Calloc(NPAR, fold_counts[f]);
+        NPAR *saved_obs = Calloc(NPAR, (size_t)fold_counts[f]);
         NDAT count_saved = 0;
         for(t=0; t<param.N; t++) {
             if( folds[ param.dat_item->get(t) ] == f ) {
@@ -1037,7 +1056,7 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename) {
             printf("fold %d is done\n",f+1);
     }
     free(fold_counts);
-    param.quiet = q;
+    param.quiet = (NPAR)q;
     // go trhough original data and predict
 	NPAR i, j, m, o, isTarget;
 	NUMBER *local_pred = init1D<NUMBER>(param.nO); // local prediction

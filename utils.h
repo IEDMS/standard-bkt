@@ -54,19 +54,17 @@ using namespace std;
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
-#define NPAR_MAX  SCHAR_MAX
-#define NCAT_MAX  SHRT_MAX
-#define NCAT2_MAX INT_MAX
-#define NDAT_MAX  UINT_MAX
+#define NPAR_MAX SCHAR_MAX
+#define NCAT_MAX INT_MAX
+#define NDAT_MAX UINT_MAX
 //http://stackoverflow.com/questions/2053843/min-and-max-value-of-data-type-in-c
 
 #define COLUMNS 4
 
-typedef signed char NPAR;    // number of observations or states, now 128 max, KEEP THIS SIGNED, we need -1 code for NULL
-typedef short NCAT;          // number of categories, groups or skills, now 32K max; LEAVE THIS UNSIGNED, we need -1 code for NULL
-typedef int NCAT2;           // number of categories 2 (larger), items, now 2 bill max
-typedef unsigned int NDAT;   // number of data rows, now 4 bill max
-typedef double NUMBER;       // numeric float format
+typedef signed char NPAR; // number of observations or states, now 128 max, KEEP THIS SIGNED, we need -1 code for NULL
+typedef signed int NCAT;  // number of categories, groups or skills, now 32K max; LEAVE THIS UNSIGNED, we need -1 code for NULL
+typedef signed int NDAT;  // number of data rows, now 4 bill max
+typedef double NUMBER;    // numeric float format
 
 //enum SOLVER { // deprecating
 //    BKT_NULL     =  0, // 0 unassigned
@@ -148,6 +146,7 @@ struct param {
 	int metrics_target_obs;   // target observation for RMSE of training
     int predictions; // report predictions on training data
     int binaryinput; // input file is in binary format
+    char initfile[1024]; // flag if we are using a model file as input
 	NPAR cv_folds; // cross-validation folds
 	NPAR cv_strat; // cross-validation stratification
 	NPAR cv_target_obs; // cross-validation target observation to validate prediction of
@@ -155,7 +154,7 @@ struct param {
     StripedArray<NPAR> *dat_obs;
     StripedArray<NCAT> *dat_group;
     StripedArray<NCAT> *dat_skill;
-    StripedArray<NCAT2> *dat_item;
+    StripedArray<NCAT> *dat_item;
     StripedArray< NCAT* > *dat_multiskill;
     StripedArray<int> *dat_time;
 	// derived from data
@@ -164,7 +163,7 @@ struct param {
 	NPAR  nO;		// number of unique observations
 	NCAT  nG;       // number of subjects (sequences, groups)
 	NCAT  nK;		// number of skills (subproblems)
-	NCAT2 nI;		// number of items (problems)
+	NCAT nI;		// number of items (problems)
     // null-skill data by student
     NDAT N_null; // total number of null skill instances
     struct data *null_skills;
@@ -183,8 +182,8 @@ struct param {
     // vocabilaries
     map<string,NCAT> *map_group_fwd; // string to id
     map<NCAT,string> *map_group_bwd; // id to string
-    map<string,NCAT2> *map_step_fwd; // string to id
-    map<NCAT2,string> *map_step_bwd; // id to string
+    map<string,NCAT> *map_step_fwd; // string to id
+    map<NCAT,string> *map_step_bwd; // id to string
     map<string,NCAT> *map_skill_fwd; // string to id
     map<NCAT,string> *map_skill_bwd; // id to string
 	// fitting specific
@@ -193,6 +192,7 @@ struct param {
 	NUMBER ArmijoReduceFactor;		// Reduction to the step if rule is not satisfied
 	NUMBER ArmijoSeed;				// Seed step
 	NUMBER ArmijoMinStep;			// Minimum step to consider before abandoing reducing it
+    NPAR block_fitting[3]; // array of flags to block PI, A, B in this
 };
 
 void destroy_input_data(struct param *param);
@@ -202,8 +202,11 @@ void writeSolverInfo(FILE *fid, struct param *param);
 void readSolverInfo(FILE *fid, struct param *param, NDAT *line_no);
 
 // projection of others
-int compareNumberRev (const void * a, const void * b);
+int compareNumber (const void * a, const void * b);
+void qsortNumber(NUMBER* ar, NPAR size);
 void qsortNumberRev(NUMBER* ar, NPAR size);
+int compareNcat (const void * a, const void * b);
+void qsortNcat(NCAT* ar, NPAR size);
 void projsimplex(NUMBER* ar, NPAR size);
 
 // projection of my own
@@ -236,24 +239,24 @@ template<typename T> void toZero3D(T*** ar, NDAT size1, NDAT size2, NDAT size3) 
 
 
 template<typename T> T* init1D(NDAT size) {
-    T* ar = Calloc(T, size);
+    T* ar = Calloc(T, (size_t)size);
     return ar;
 }
 
 template<typename T> T** init2D(NDAT size1, NDAT size2) {
-	T** ar = (T **)Calloc(T *,size1);
+	T** ar = (T **)Calloc(T *, (size_t)size1);
 	for(NDAT i=0; i<size1; i++)
-		ar[i] = (T *)Calloc(T, size2);
+		ar[i] = (T *)Calloc(T, (size_t)size2);
 	return ar;
 }
 
 template<typename T> T*** init3D(NDAT size1, NDAT size2, NDAT size3) {
 	NDAT i,j;
-	T*** ar = Calloc(T **, size1);
+	T*** ar = Calloc(T **, (size_t)size1);
 	for(i=0; i<size1; i++) {
-		ar[i] = Calloc(T*, size2);
+		ar[i] = Calloc(T*, (size_t)size2);
 		for(j=0; j<size2; j++)
-			ar[i][j] = Calloc(T, size3);
+			ar[i][j] = Calloc(T, (size_t)size3);
 	}
 	return ar;
 }
@@ -284,16 +287,16 @@ template<typename T> void free3D(T*** ar, NDAT size1, NDAT size2) {
 //void free2DNCat(NCAT **ar, NCAT size1);
 
 template<typename T> void cpy1D(T* source, T* target, NDAT size) {
-    memcpy( target, source, sizeof(T)*size );
+    memcpy( target, source, sizeof(T)*(size_t)size );
 }
 template<typename T> void cpy2D(T** source, T** target, NDAT size1, NDAT size2) {
 	for(NDAT i=0; i<size1; i++)
-		memcpy( target[i], source[i], sizeof(T)*size2 );
+		memcpy( target[i], source[i], sizeof(T)*(size_t)size2 );
 }
 template<typename T> void cpy3D(T*** source, T*** target, NDAT size1, NDAT size2, NDAT size3) {
 	for(NDAT t=0; t<size1; t++)
         for(NDAT i=0; i<size2; i++)
-            memcpy( target[t][i], source[t][i], sizeof(T)*size3 );
+            memcpy( target[t][i], source[t][i], sizeof(T)*(size_t)size3 );
 }
 
 //void cpy1DNumber(NUMBER* source, NUMBER* target, NDAT size);
@@ -302,9 +305,9 @@ template<typename T> void cpy3D(T*** source, T*** target, NDAT size1, NDAT size2
 
 template<typename T> void swap1D(T* source, T* target, NDAT size) {
     T* buffer = init1D<T>(size); // init1<NUMBER>(size);
-	memcpy( target, buffer, sizeof(T)*size );
-	memcpy( source, target, sizeof(T)*size );
-	memcpy( buffer, source, sizeof(T)*size );
+	memcpy( target, buffer, sizeof(T)*(size_t)size );
+	memcpy( source, target, sizeof(T)*(size_t)size );
+	memcpy( buffer, source, sizeof(T)*(size_t)size );
     free(buffer);
 }
 template<typename T> void swap2D(T** source, T** target, NDAT size1, NDAT size2) {
