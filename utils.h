@@ -36,7 +36,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <memory.h>
-#include <algorithm>
 #include "StripedArray.h"
 #include <time.h>
 
@@ -56,15 +55,18 @@ using namespace std;
 
 #define NPAR_MAX SCHAR_MAX
 #define NCAT_MAX INT_MAX
-#define NDAT_MAX UINT_MAX
+#define NDAT_MAX INT_MAX
+
 //http://stackoverflow.com/questions/2053843/min-and-max-value-of-data-type-in-c
 
 #define COLUMNS 4
+
 
 typedef signed char NPAR; // number of observations or states, now 128 max, KEEP THIS SIGNED, we need -1 code for NULL
 typedef signed int NCAT;  // number of categories, groups or skills, now 32K max; LEAVE THIS UNSIGNED, we need -1 code for NULL
 typedef signed int NDAT;  // number of data rows, now 4 bill max
 typedef double NUMBER;    // numeric float format
+const NUMBER pi = 3.141592653589793;
 
 //enum SOLVER { // deprecating
 //    BKT_NULL     =  0, // 0 unassigned
@@ -106,6 +108,7 @@ struct FitResult {
     NUMBER pO0; // starting log-likelihood
     NUMBER pO;  // final log-likelihood
     int conv;   // converged? (maybe just went to max-iter)
+    NDAT ndat;
 };
 
 // a sequence of observations (usually belonging to a student practicing a skill)
@@ -114,13 +117,13 @@ struct data {
 	NDAT cnt;  // help counter, used for building the data and "banning" data from being fit when cross-valudating based on group
     //	NPAR *obs; // onservations array - will become the pointer array to the big data
     NDAT *ix; // these are 'ndat' indices to the through arrays (e.g. param.dat_obs and param.dat_item)
-	NUMBER *c; // nS  - scaling factor
+	NUMBER *c; // nS  - scaling factor vector
     int *time;
 	NUMBER **alpha; // ndat x nS
 	NUMBER **beta;  // ndat x nS
 	NUMBER **gamma; // ndat x nS
 	NUMBER ***xi; // ndat x nS x nS
-	NUMBER p_O_param; // ndat
+	NUMBER p_O_param; // 
     NUMBER loglik; // loglikelihood
 	NCAT k,g; // pointers to skill (k) and group (g)
 };
@@ -134,6 +137,7 @@ struct param {
 	NUMBER *param_lo;
 	NUMBER *param_hi;
 	NUMBER tol;  // tolerance of termination criterion (0.0001 by default)
+    NPAR scaled;
     NPAR time; // 1-read time data from 5th column as milliseconds since epoch (0-default)
 	int maxiter; // maximum iterations (200 by default)
 	NPAR quiet;   // quiet mode (no outputs)
@@ -151,12 +155,12 @@ struct param {
 	NPAR cv_strat; // cross-validation stratification
 	NPAR cv_target_obs; // cross-validation target observation to validate prediction of
     // data
-    StripedArray<NPAR> *dat_obs;
-    StripedArray<NCAT> *dat_group;
-    StripedArray<NCAT> *dat_skill;
-    StripedArray<NCAT> *dat_item;
+    NPAR* dat_obs;
+    NCAT* dat_group;
+    NCAT *dat_skill;
+    NCAT *dat_item;
     StripedArray< NCAT* > *dat_multiskill;
-    StripedArray<int> *dat_time;
+    int *dat_time;
 	// derived from data
     NDAT   N;       // number of ALL data rows
 	NPAR  nS;		// number of states
@@ -305,23 +309,23 @@ template<typename T> void cpy3D(T*** source, T*** target, NDAT size1, NDAT size2
 
 template<typename T> void swap1D(T* source, T* target, NDAT size) {
     T* buffer = init1D<T>(size); // init1<NUMBER>(size);
-	memcpy( target, buffer, sizeof(T)*(size_t)size );
-	memcpy( source, target, sizeof(T)*(size_t)size );
-	memcpy( buffer, source, sizeof(T)*(size_t)size );
+	memcpy( buffer, target, sizeof(T)*(size_t)size ); // reversed order, destination then source
+	memcpy( target, source , sizeof(T)*(size_t)size );
+	memcpy( source, buffer, sizeof(T)*(size_t)size );
     free(buffer);
 }
 template<typename T> void swap2D(T** source, T** target, NDAT size1, NDAT size2) {
     T** buffer = init2D<T>(size1, size2);
-    cpy2D<T>(target, buffer, size1, size2);
-    cpy2D<T>(source, target, size1, size2);
-    cpy2D<T>(buffer, source, size1, size2);
+    cpy2D<T>(buffer, target, size1, size2);
+    cpy2D<T>(target, source, size1, size2);
+    cpy2D<T>(source, buffer, size1, size2);
     free2D<T>(buffer, size1);
 }
 template<typename T> void swap3D(T*** source, T*** target, NDAT size1, NDAT size2, NDAT size3) {
     T*** buffer = init3D<T>(size1, size2, size3);
-    cpy3D<T>(target, buffer, size1, size2, size3);
-    cpy3D<T>(source, target, size1, size2, size3);
-    cpy3D<T>(buffer, source, size1, size2, size3);
+    cpy3D<T>(buffer, target, size1, size2, size3);
+    cpy3D<T>(target, source, size1, size2, size3);
+    cpy3D<T>(source, buffer, size1, size2, size3);
     free3D<T>(buffer, size1, size2);
 }
 
@@ -351,7 +355,7 @@ void RecycleFitData(NCAT xndat, struct data** x_data, struct param *param);
 
 // penalties
 NUMBER L2penalty(param* param, NUMBER w);
-
+NUMBER L2penalty(param* param, NUMBER w, NUMBER penalty_offset);
 
 #endif
 

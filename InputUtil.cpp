@@ -162,15 +162,17 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 	line = (char *)malloc((size_t)max_line_length);// Malloc(char,max_line_length);
 	
 	// grab memory and read all data
-	param->dat_obs   = new StripedArray<NPAR>();
-	param->dat_group = new StripedArray<NCAT>();
+	StripedArray<NPAR> *striped_dat_obs = new StripedArray<NPAR>();
+	StripedArray<NCAT> *striped_dat_group = new StripedArray<NCAT>();
+    StripedArray<NCAT> *striped_dat_skill = NULL;
     if(param->multiskill==0)
-        param->dat_skill = new StripedArray<NCAT>();
+        striped_dat_skill = new StripedArray<NCAT>();
     else
         param->dat_multiskill = new StripedArray< NCAT* >(true);
-	param->dat_item = new StripedArray<NCAT>();
+	StripedArray<NCAT> * striped_dat_item = new StripedArray<NCAT>();
+    StripedArray<int> *striped_dat_time = new StripedArray<int>();
     if(param->time)
-        param->dat_time = new StripedArray<int>();
+        striped_dat_time = new StripedArray<int>();
     param->map_group_fwd = new map<string,NCAT>();
     param->map_group_bwd = new map<NCAT,string>();
     param->map_skill_fwd = new map<string,NCAT>();
@@ -199,9 +201,9 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 			fprintf(stderr,"Number of observtions exceeds allowed maximum of %d.\n",NPAR_MAX);
 			return false;
 		}
-		param->dat_obs->add((NPAR)obs); // dat_obs[t] = (NPAR)obs;
+		striped_dat_obs->add(obs); // dat_obs[t] = (NPAR)obs;
 		if( (obs >= 0) && ((param->nO-1) < obs) )
-			param->nO = obs + (NPAR)1; // obs[t] + 1;
+			param->nO = (NPAR)(obs + 1); // obs[t] + 1;
 		// Group
 		col = strtok(NULL,"\t\n\r");
 		if(col == NULL) {
@@ -217,12 +219,12 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 				return false;
 			}
 			NCAT newg = (NCAT)param->map_group_fwd->size();
-			param->dat_group->add(newg); //[t] = param->map_group_fwd.size();
+			striped_dat_group->add(newg); //[t] = param->map_group_fwd.size();
 			param->map_group_fwd->insert(pair<string,NCAT>(s_group, newg));
 			param->map_group_bwd->insert(pair<NCAT,string>(newg, s_group));
 		}
 		else
-			param->dat_group->add(it->second); // [t] = it->second;
+			striped_dat_group->add(it->second); // [t] = it->second;
 		
 		
 		// Step
@@ -240,12 +242,12 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 				return false;
 			}
             NCAT news = (NCAT)param->map_step_fwd->size();
-			param->dat_item->add(news); //[t] = param->map_group_fwd.size();
+			striped_dat_item->add(news); //[t] = param->map_group_fwd.size();
 			param->map_step_fwd->insert(pair<string,NCAT>(s_step, news));
 			param->map_step_bwd->insert(pair<NCAT,string>(news, s_step));
 		}
 		else
-            param->dat_item->add(it2->second);
+            striped_dat_item->add(it2->second);
 		
         
 		// Skill
@@ -270,14 +272,14 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
                 fprintf(stderr,"Time cannot be negative or zero (line %d).\n",param->N+1);
 				return false;
             }
-            param->dat_time->add(time);
+            striped_dat_time->add(time);
         } // time
         
         // back to skill processing
 		if( (s_skill.empty() || ( s_skill.size()==1 && (s_skill[0]=='.' || s_skill[0]==' ') ) ) ) { // null skill
             param->N_null++;
             if(param->multiskill == 0) {
-                param->dat_skill->add(-1); // [t] = -1;
+                striped_dat_skill->add(-1); // [t] = -1;
             }
             else {
                 NCAT* a_skills = Malloc(NCAT, 2);
@@ -327,21 +329,17 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
                         fprintf(stderr,"Number of unique skills exceeds allowed maximum of %d.\n",NCAT_MAX);
                         return false;
                     }
-                    param->dat_skill->add((NCAT)param->map_skill_fwd->size()); //[t] = param->map_skill_fwd.size();
+                    striped_dat_skill->add((NCAT)param->map_skill_fwd->size()); //[t] = param->map_skill_fwd.size();
                     param->map_skill_fwd->insert(pair<string,NCAT>(s_skill, (NCAT)param->map_skill_fwd->size()));
                     param->map_skill_bwd->insert(pair<NCAT,string>((NCAT)param->map_skill_bwd->size(),s_skill));
                 }
                 else
-                    param->dat_skill->add(it->second); //[t] = it->second;
+                    striped_dat_skill->add(it->second); //[t] = it->second;
             } // single skill
 		} // non empty skill
         
 		// count lines
 		param->N++;	// increase line count
-//        if(param->N % 100000 == 0) {
-//            fprintf(stdout,"%d rows read\n",param->N);
-//        }
-        //        fprintf(stdout,"Line %d\n",param->N);
 	}// reading loop
 	if(wrong_no_columns) {
 		fprintf(stderr,"Wrong number of columns in line %u. Expected %d, found %d\n",param->N+1,COLUMNS+param->time, number_columns);
@@ -352,6 +350,23 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 	param->nG = (NCAT)param->map_group_fwd->size();
 	param->nK = (NCAT)param->map_skill_fwd->size();
 	param->nI = (NCAT)param->map_step_fwd->size();
+    
+    // copy striped to lined
+    param->dat_obs = striped_dat_obs->toArray();
+    delete striped_dat_obs;
+    param->dat_group = striped_dat_group->toArray();
+    delete striped_dat_group;
+    if(param->multiskill==0) {
+        param->dat_skill = striped_dat_skill->toArray();
+        delete striped_dat_skill;
+    }
+    param->dat_item = striped_dat_item->toArray();
+    delete striped_dat_item;
+    if(param->time) {
+        param->dat_time = striped_dat_time->toArray();
+        delete striped_dat_time;
+    }
+
 	fclose(fid);
 	free(line);
     return true;
@@ -433,44 +448,49 @@ bool InputUtil::readBin(const char *fn, struct param * param) {
     
     
     // dat_obs
-    param->dat_obs = new StripedArray<NPAR>(fid, param->N);
-    
+    StripedArray<NPAR> *striped_dat_obs = new StripedArray<NPAR>(fid, param->N);
+    param->dat_obs = striped_dat_obs->toArray();
+    delete striped_dat_obs;
+
     if(v==1) { // older NCAT of unsigned short
         StripedArray<short> *dat_group_legacy = NULL;
         StripedArray<short> *dat_skill_legacy = NULL;
         StripedArray<short*> *dat_multiskill_legacy = NULL;
         dat_group_legacy = new StripedArray<short>(fid, param->N);
-        param->dat_group = new StripedArray<NCAT>(param->N, false);
         for(t=0; t<param->N; t++)
-            param->dat_group->set(t, (NCAT)dat_group_legacy->get(t) );
+            param->dat_group[t] = (NCAT)dat_group_legacy->get(t);
         if(param->multiskill == 0) {
             dat_skill_legacy = new StripedArray<short>(fid, param->N);
-            param->dat_skill = new StripedArray<NCAT>(param->N,false);
             for(t=0; t<param->N; t++)
-                param->dat_skill->set(t, (NCAT)dat_skill_legacy->get(t) );
+                param->dat_skill[t] = (NCAT)dat_skill_legacy->get(t);
+            delete dat_skill_legacy;
         }
         else {
             param->dat_multiskill = new StripedArray<NCAT*>(param->N,true);
             nread = readMultiSkill(fid, param, v);
+            delete dat_multiskill_legacy;
         }
         delete dat_group_legacy;
-        if(dat_skill_legacy!=NULL) delete dat_skill_legacy;
-        if(dat_multiskill_legacy!=NULL) delete dat_multiskill_legacy;
     } else {
         // dat_group
-        param->dat_group = new StripedArray<NCAT>(fid, param->N);
+        StripedArray<NCAT> *striped_dat_group = new StripedArray<NCAT>(fid, param->N);
+        param->dat_group = striped_dat_group->toArray();
+        delete striped_dat_group;
         // dat_skill
-        if(param->multiskill == 0)
-            param->dat_skill = new StripedArray<NCAT>(fid, param->N);
-        else {
+        if(param->multiskill == 0) {
+            StripedArray<NCAT> *striped_dat_skill = new StripedArray<NCAT>(fid, param->N);
+            param->dat_skill = striped_dat_skill->toArray();
+            delete striped_dat_skill;
+        } else {
             param->dat_multiskill = new StripedArray< NCAT* >(param->N,true);
             nread = readMultiSkill(fid, param, v);
         }
     }
     
     // dat_item
-    param->dat_item = new StripedArray<NCAT>(fid, param->N);
-    
+    StripedArray<NCAT> *striped_dat_item = new StripedArray<NCAT>(fid, param->N);
+    param->dat_item = striped_dat_item->toArray();
+    delete striped_dat_item;
     
     string str;
     param->map_group_fwd = new map<string,NCAT>();
@@ -562,18 +582,18 @@ bool InputUtil::toBin(struct param * param, const char *fn) {
     c = param->multiskill;
     fwrite (&c , sizeof(char), 1, fid);
     
-    NDAT nwrit;
+//    NDAT nwrit;
     // dat_obs
-    nwrit = param->dat_obs->toBinFile(fid);
+    /*nwrit = */StripedArray<NPAR>::arrayToBinFile(param->dat_obs, param->N, fid);//param->dat_obs->toBinFile(fid);
     // dat_group
-    nwrit = param->dat_group->toBinFile(fid);
+    /*nwrit = */StripedArray<NCAT>::arrayToBinFile(param->dat_group, param->N, fid);//->toBinFile(fid);
     // dat_skill
     if(param->multiskill == 0)
-        nwrit = param->dat_skill->toBinFile(fid);
+        /*nwrit = */StripedArray<NCAT>::arrayToBinFile(param->dat_skill, param->N, fid);//->toBinFile(fid);
     else
-        nwrit = writeMultiSkill(fid, param);
+        /*nwrit = */writeMultiSkill(fid, param);
     // dat_item
-    nwrit = param->dat_item->toBinFile(fid);
+    /*nwrit = */StripedArray<NCAT>::arrayToBinFile(param->dat_item, param->N, fid);//->toBinFile(fid);
 
     map<NCAT,string>::iterator it;
     // voc_group

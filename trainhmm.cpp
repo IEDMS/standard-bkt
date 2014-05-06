@@ -63,74 +63,80 @@ int main (int argc, char ** argv) {
     
     if(!param.quiet)
         printf("trainhmm starting...\n");
-	bool is_data_read = read_and_structure_data(input_file);
+	if( ! read_and_structure_data(input_file) )
+        return 0;
     
-    if( is_data_read ) {
-        if(!param.quiet)
-            printf("input read, nO=%d, nG=%d, nK=%d, nI=%d\n",param.nO, param.nG, param.nK, param.nI);
-        
-        clock_t tm;
-        
-        // erase blocking labels
-        zeroLabels(&param);
-        // go
-        if(param.cv_folds==0) { // not cross-validation
-            // create problem
-            HMMProblem *hmm;
-//            switch(param.structure)
-//            {
-//                case STRUCTURE_SKILL: // Conjugate Gradient Descent
-//                case STRUCTURE_GROUP: // Conjugate Gradient Descent
-                    hmm = new HMMProblem(&param);
-//                    break;
-//            }
-            
-            tm = clock();
-            hmm->fit();
-            
-            if(param.quiet == 0)
-                printf("fitting is done in %8.6f seconds\n",(NUMBER)(clock()-tm)/CLOCKS_PER_SEC);
-            
-            // write model
-            hmm->toFile(output_file);
-            
-            if(param.metrics>0 || param.predictions>0) {
-                NUMBER* metrics = Calloc(NUMBER, 7); // LL, AIC, BIC, RMSE, RMSEnonull, Acc, Acc_nonull;
-                hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_multiskill, false/*all, not only unlabelled*/);
-                if( param.metrics>0 && !param.quiet) {
-                    printf("trained model LL=%15.7f, AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f)\n",metrics[0], metrics[1], metrics[2], metrics[3], metrics[4], metrics[5], metrics[6]);
-                }
-                free(metrics);
-            } // if predict or metrics
-            
-            delete hmm;
-        } else { // cross-validation
-            tm = clock();
-            NUMBER* metrics = Calloc(NUMBER, 7); // AIC, BIC, RMSE, RMSE no null
-            switch (param.cv_strat) {
-                case CV_GROUP:
-                    cross_validate(metrics, predict_file);
-                    break;
-                case CV_ITEM:
-                    cross_validate_item(metrics, predict_file);
-                    break;
-                case CV_NSTR:
-                    cross_validate_nstrat(metrics, predict_file);
-                    break;
-                default:
-                    
-                    break;
-            }
-            if(!param.quiet)
-                printf("%d-fold cross-validation: LL=%15.7f, AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f) computed in %8.6f seconds\n",param.cv_folds, metrics[0], metrics[1], metrics[2], metrics[3], metrics[4], metrics[5], metrics[6], (NUMBER)(clock()-tm)/CLOCKS_PER_SEC);
-            free(metrics);
+    if(!param.quiet)
+        printf("input read, nO=%d, nG=%d, nK=%d, nI=%d\n",param.nO, param.nG, param.nK, param.nI);
+    
+    // erase blocking labels
+    zeroLabels(&param);
+
+    clock_t tm; //SEQ
+    
+    if(param.cv_folds==0) { // not cross-validation
+        // create problem
+        HMMProblem *hmm = NULL;
+        switch(param.structure)
+        {
+            case STRUCTURE_SKILL: // Conjugate Gradient Descent
+            case STRUCTURE_GROUP: // Conjugate Gradient Descent
+                hmm = new HMMProblem(&param);
+                break;
         }
+        clock_t tm = clock(); //SEQ
+        
+        hmm->fit();
+        
+        printf("fitting is done in %8.6f seconds\n",(NUMBER)(clock()-tm)/CLOCKS_PER_SEC); //SEQ
+        
+        // write model
+        hmm->toFile(output_file);
+        
+        if(param.metrics>0 || param.predictions>0) {
+            NUMBER* metrics = Calloc(NUMBER, (size_t)7); // LL, AIC, BIC, RMSE, RMSEnonull, Acc, Acc_nonull;
+            // takes care of predictions and metrics, writes predictions if param.predictions==1
+            
+            hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_multiskill, false/*all, not only unlabelled*/);
+            if( param.metrics>0 /*&& !param.quiet*/) {
+                printf("trained model LL=%15.7f (%15.7f), AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f)\n",
+                       metrics[0], metrics[1], // ll's
+                       2*hmm->getNparams() + 2*metrics[0], hmm->getNparams()*safelog(param.N) + 2*metrics[0],
+                       metrics[2], metrics[3], // rmse's
+                       metrics[4], metrics[5]); // acc's
+            }
+            free(metrics);
+        } // if predict or metrics
+        
+        delete hmm;
+    } else { // cross-validation
+        tm = clock(); //SEQ
+        NUMBER* metrics = Calloc(NUMBER, (size_t)7); // AIC, BIC, RMSE, RMSE no null
+        switch (param.cv_strat) {
+            case CV_GROUP:
+                cross_validate(metrics, predict_file);
+                break;
+            case CV_ITEM:
+                cross_validate_item(metrics, predict_file);
+                break;
+            case CV_NSTR:
+                cross_validate_nstrat(metrics, predict_file);
+                break;
+            default:
+                
+                break;
+        }
+
+        printf("%d-fold cross-validation: LL=%15.7f, AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f) computed in %8.6f seconds\n",param.cv_folds, metrics[0], metrics[1], metrics[2], metrics[3], metrics[4], metrics[5], metrics[6], (NUMBER)(clock()-tm)/CLOCKS_PER_SEC); //SEQ
+
+        free(metrics);
     }
 	// free data
 	destroy_input_data(&param);
 	
-	if(param.quiet == 0)
-		printf("overall time running is %8.6f seconds\n",(NUMBER)(clock()-tm0)/CLOCKS_PER_SEC);
+
+    printf("overall time running is %8.6f seconds\n",(NUMBER)(clock()-tm0)/CLOCKS_PER_SEC); //SEQ
+
     return 0;
 }
 
@@ -182,7 +188,7 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 	// parse command line options, starting from 1 (0 is path to executable)
 	// go in pairs, looking at whether first in pair starts with '-', if not, stop parsing arguments
 	int i;
-    NPAR n;
+    int n;
     char *ch, *ch2;
 	for(i=1;i<argc;i++)
 	{
@@ -229,7 +235,13 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 					fprintf(stderr,"ERROR! Number of hidden states should be at least 2\n");
 					exit_with_help();
 				}
-				//fprintf(stdout, "fit single skill=%d\n",param.quiet);
+				break;
+			case 'S':
+				param.scaled = (NPAR)atoi(argv[i]);
+				if(param.scaled < 0 || param.scaled > 1) {
+					fprintf(stderr,"ERROR! Scaling flag should be either 0 (off) or 1 (in)\n");
+					exit_with_help();
+				}
 				break;
 			case 's':
 				param.structure = (NPAR)atoi( strtok(argv[i],".\t\n\r") );
@@ -269,7 +281,7 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 				// count delimiters
 				n = 1; // start with 1
 				for(int j=0;j<len;j++) {
-					n += (argv[i][j]==',')?(NPAR)1:(NPAR)0;
+					n += (argv[i][j]==',')?1:0;
                     if( (argv[i][j] >= 'a' && argv[i][j] <= 'z') || (argv[i][j] >= 'A' && argv[i][j] <= 'Z') ) {
                         strcpy(param.initfile, argv[i]);
                         break;
@@ -290,7 +302,7 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 				// count delimiters
 				n = 1; // start with 1
 				for(int j=0;j<len;j++)
-					n += (argv[i][j]==',')?(NPAR)1:(NPAR)0;
+					n += (NPAR)((argv[i][j]==',')?1:0);
 				// init params
 				free(param.param_lo);
 				param.param_lo = Calloc(NUMBER, (size_t)n);
@@ -304,7 +316,7 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 				// count delimiters
 				n = 1; // start with 1
 				for(int j=0;j<len;j++)
-					n += (argv[i][j]==',')?(NPAR)1:(NPAR)0;
+					n += (argv[i][j]==',')?1:0;
 				// init params
 				free(param.param_hi);
 				param.param_hi = Calloc(NUMBER, (size_t)n);
@@ -421,7 +433,11 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
         fprintf(stderr,"values for -v and -m cannot be both non-zeros\n");
         exit_with_help();
     }
-	
+    // scaling
+    if(param.scaled == 1 && param.solver != METHOD_BW) {
+        param.scaled = 0;
+        printf("Scaling can only be enabled for Baum-Welch method. Setting it to off\n");
+    }
 	// next argument should be input file name
 	if(i>=argc) // if not
 		exit_with_help(); // leave
@@ -458,7 +474,7 @@ bool read_and_structure_data(const char *filename) {
 	NDAT t = 0;
     int tm = 0; // time
 	NCAT g, k;
-	NPAR o;
+
 	NPAR **skill_group_map = init2D<NPAR>(param.nK, param.nG); // binary map of skills to groups
 	param.k_numg = Calloc(NCAT, (size_t)param.nK);
 	param.g_numk = Calloc(NCAT, (size_t)param.nG);
@@ -468,10 +484,10 @@ bool read_and_structure_data(const char *filename) {
 	// Pass A
 	for(t=0; t<param.N; t++) {
         if(param.multiskill==0)
-            k = param.dat_skill->get(t);//[t];
+            k = param.dat_skill[t];//[t];
         else
             k = param.dat_multiskill->get(t)[1]; // #0 is count, #1 is first element
-		g = param.dat_group->get(t);//[t];
+		g = param.dat_group[t];//[t];
 		// null skill : just count
 		if( k < 0 ) {
             if(count_null_skill_group[g]==0) param.n_null_skill_group++;
@@ -481,7 +497,7 @@ bool read_and_structure_data(const char *filename) {
         NCAT *ar;
         int n;
         if(param.multiskill==0) {
-            k = param.dat_skill->get(t);
+            k = param.dat_skill[t];
             ar = &k;
             n = 1;
         } else {
@@ -509,7 +525,7 @@ bool read_and_structure_data(const char *filename) {
 	param.g_data = Malloc(struct data *, (size_t)param.nSeq);
     //	for(g=0; g<param.nG; g++)
     //		param.g_k_data[g] = Calloc(struct data*, param.g_numk[g]);
-	param.null_skills = Malloc(struct data, (size_t)param.n_null_skill_group);
+	param.null_skills = Calloc(struct data, (size_t)param.n_null_skill_group);
     // index compressed array of null-skill-BY-group
     NCAT idx = 0;
 	for(g=0; g<param.nG; g++)
@@ -536,7 +552,7 @@ bool read_and_structure_data(const char *filename) {
         NCAT *ar;
         int n;
         if(param.multiskill==0) {
-            k = param.dat_skill->get(t);
+            k = param.dat_skill[t];
             ar = &k;
             n = 1;
         } else {
@@ -545,7 +561,7 @@ bool read_and_structure_data(const char *filename) {
         }
         for(int l=0; l<n; l++) {
             k = ar[l];
-            g = param.dat_group->get(t);//[t];
+            g = param.dat_group[t];//[t];
             // now allocate space for the data
             if( k < 0 ) {
                 NCAT gidx = index_null_skill_group[g];
@@ -574,6 +590,21 @@ bool read_and_structure_data(const char *filename) {
                 // link
                 param.k_data[ k_countg[k] ] = &param.all_data[n_all_data]; // in linear array
                 param.g_data[ g_countk[g] ] = &param.all_data[n_all_data]; // in linear array
+                // param.k_g_data[k] and param.g_k_data[g] are already linked
+                //                param.k_g_data[k][ k_countg[k] ] = Calloc(struct data, 1); // grab
+                //                param.g_k_data[g][ g_countk[g] ] = param.k_g_data[k][ k_countg[k] ]; // relink
+                //                param.k_g_data[k][ k_countg[k] ]->n = 1; // init data << VV
+                //                param.k_g_data[k][ k_countg[k] ]->k = k; // init k
+                //                param.k_g_data[k][ k_countg[k] ]->g = g; // init g
+                //                param.k_g_data[k][ k_countg[k] ]->cnt = 0;
+                //                param.k_g_data[k][ k_countg[k] ]->obs = NULL;
+                //                param.k_g_data[k][ k_countg[k] ]->alpha = NULL;
+                //                param.k_g_data[k][ k_countg[k] ]->beta = NULL;
+                //                param.k_g_data[k][ k_countg[k] ]->gamma = NULL;
+                //                param.k_g_data[k][ k_countg[k] ]->xi = NULL;
+                //                param.k_g_data[k][ k_countg[k] ]->c = NULL;
+                //                param.k_g_data[k][ k_countg[k] ]->p_O_param = 0.0;
+                //                param.k_g_data[k][ k_countg[k] ]->loglik = 0.0;
                 param.all_data[n_all_data].n = 1; // init data << VV
                 param.all_data[n_all_data].k = k; // init k
                 param.all_data[n_all_data].g = g; // init g
@@ -616,14 +647,14 @@ bool read_and_structure_data(const char *filename) {
 	k_countg = Calloc(NDAT, (size_t)param.nK); // track current group in skill
 	g_countk = Calloc(NDAT, (size_t)param.nG); // track current skill in group
 	for(t=0; t<param.N; t++) {
-		g = param.dat_group->get(t);
-		o = param.dat_obs->get(t);
+		g = param.dat_group[t];
+
         if(param.time)
-            tm = param.dat_time->get(t);
+            tm = param.dat_time[t];
         NCAT *ar;
         int n;
         if(param.multiskill==0) {
-            k = param.dat_skill->get(t);
+            k = param.dat_skill[t];
             ar = &k;
             n = 1;
         } else {
@@ -641,6 +672,8 @@ bool read_and_structure_data(const char *filename) {
             if( skill_group_map[k][g]<2)
                 printf("ERROR! position [%d,%d] in skill_group_map should have been 2\n",k,g);
             else if( skill_group_map[k][g]==2 ) { // grab data and insert first dat point
+                //                param.k_g_data[k][ k_countg[k] ]->obs = Calloc(NPAR, (size_t)param.k_g_data[k][ k_countg[k] ]->n); // grab
+                //                param.k_g_data[k][ k_countg[k] ]->obs[0] = o; // insert
                 param.k_g_data[k][ k_countg[k] ]->ix = Calloc(NDAT, (size_t)param.k_g_data[k][ k_countg[k] ]->n); // grab
                 if(param.time)
                     param.k_g_data[k][ k_countg[k] ]->time = Calloc(int, (size_t)param.k_g_data[k][ k_countg[k] ]->n); // grab
@@ -680,6 +713,7 @@ bool read_and_structure_data(const char *filename) {
             param.g_k_data[g][k]->cnt = 0;
     for(NCAT x=0; x<param.n_null_skill_group; x++)
         param.null_skills[x].cnt = 0;
+
     return true;
 }
 
@@ -700,18 +734,13 @@ void cross_validate(NUMBER* metrics, const char *filename) {
     // produce folds
     NPAR *folds = Calloc(NPAR, (size_t)param.nG);//[param.nG];
     srand ( (unsigned int)time(NULL) );
-    for(g=0; g<param.nG; g++) folds[g] = rand() % param.cv_folds;
+    for(g=0; g<param.nG; g++) folds[g] = (NPAR)(rand() % param.cv_folds);
     // create and fit multiple problems
     HMMProblem* hmms[param.cv_folds];
     int q = param.quiet;
     param.quiet = 1;
     for(f=0; f<param.cv_folds; f++) {
-//        switch(param.structure)
-//        {
-//            case STRUCTURE_SKILL:
-//            case STRUCTURE_GROUP: 
-                hmms[f] = new HMMProblem(&param);
-//        }
+        hmms[f] = new HMMProblem(&param);
         // block respective data - do not fit the data belonging to the fold
         for(g=0; g<param.nG; g++) // for all groups
             if(folds[g]==f) { // if in current fold
@@ -761,16 +790,16 @@ void cross_validate(NUMBER* metrics, const char *filename) {
     }
 	// deal with null skill
 	for(t=0; t<param.N; t++) {
-		o = param.dat_obs->get(t);//[t]; correct: obs 1 (0 code), incorect obs 2 (1 code), hence 1-code is the conversion
+		o = param.dat_obs[t];//[t]; correct: obs 1 (0 code), incorect obs 2 (1 code), hence 1-code is the conversion
         isTarget = (NPAR)(param.cv_target_obs == o);
-		g = param.dat_group->get(t);//[t];
+		g = param.dat_group[t];//[t];
         dt.g = g;
         f = folds[g];
         
         NCAT *ar;
         int n;
         if(param.multiskill==0) {
-            k = param.dat_skill->get(t);
+            k = param.dat_skill[t];
             ar = &k;
             n = 1;
         } else {
@@ -863,29 +892,23 @@ void cross_validate_item(NUMBER* metrics, const char *filename) {
     NDAT *fold_counts = Calloc(NDAT, (size_t)param.cv_folds);
     //    NDAT *fold_shortcounts = Calloc(NDAT, (size_t)param.cv_folds);
     srand ( (unsigned int)time(NULL) ); // randomize
-    for(I=0; I<param.nI; I++) folds[I] = rand() % param.cv_folds; // produce folds
+    for(I=0; I<param.nI; I++) folds[I] = (NPAR)(rand() % param.cv_folds); // produce folds
     // count number of items in each fold
     //    for(I=0; I<param.nI; I++) fold_shortcounts[ folds[I] ]++; // produce folds
-    for(t=0; t<param.N; t++) fold_counts[ folds[param.dat_item->get(t)] ]++;
+    for(t=0; t<param.N; t++) fold_counts[ folds[param.dat_item[t]/*->get(t)*/] ]++;
     // create and fit multiple problems
     HMMProblem* hmms[param.cv_folds];
     int q = param.quiet;
     param.quiet = 1;
     for(f=0; f<param.cv_folds; f++) {
-//        switch(param.structure)
-//        {
-//            case STRUCTURE_SKILL:
-//            case STRUCTURE_GROUP:
-                hmms[f] = new HMMProblem(&param);
-//                break;
-//        }
+        hmms[f] = new HMMProblem(&param);
         // block respective data - do not fit the data belonging to the fold
         NPAR *saved_obs = Calloc(NPAR, (size_t)fold_counts[f]);
         NDAT count_saved = 0;
         for(t=0; t<param.N; t++) {
-            if( folds[ param.dat_item->get(t) ] == f ) {
-                saved_obs[count_saved++] = param.dat_obs->get(t);
-                param.dat_obs->set(t, -1);
+            if( folds[ param.dat_item[t]/*->get(t)*/ ] == f ) {
+                saved_obs[count_saved++] = param.dat_obs[t];
+                param.dat_obs[t] = -1;//->set(t, -1);
             }
         }
         // now compute
@@ -894,8 +917,8 @@ void cross_validate_item(NUMBER* metrics, const char *filename) {
         // UN-block respective data
         count_saved = 0;
         for(t=0; t<param.N; t++)
-            if( folds[ param.dat_item->get(t) ] == f )
-                param.dat_obs->set(t, saved_obs[count_saved++]);
+            if( folds[ param.dat_item[t]/*->get(t)*/ ] == f )
+                param.dat_obs[t]=saved_obs[count_saved++];//->set(t, saved_obs[count_saved++]);
         free(saved_obs);
         if(q == 0)
             printf("fold %d is done\n",f+1);
@@ -922,16 +945,16 @@ void cross_validate_item(NUMBER* metrics, const char *filename) {
     }
 	// deal with null skill
 	for(t=0; t<param.N; t++) {
-		o = param.dat_obs->get(t);//[t]; correct: obs 1 (0 code), incorect obs 2 (1 code), hence 1-code is the conversion
+		o = param.dat_obs[t];//[t]; correct: obs 1 (0 code), incorect obs 2 (1 code), hence 1-code is the conversion
         isTarget = (NPAR)(param.cv_target_obs == o);
-		g = param.dat_group->get(t);//[t];
+		g = param.dat_group[t];//
         dt.g = g;
         f = folds[g];
         
         NCAT *ar;
         int n;
         if(param.multiskill==0) {
-            k = param.dat_skill->get(t);
+            k = param.dat_skill[t];
             ar = &k;
             n = 1;
         } else {
@@ -1019,28 +1042,21 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename) {
     NDAT *fold_counts = Calloc(NDAT, (size_t)param.cv_folds);
     //    NDAT *fold_shortcounts = Calloc(NDAT, (size_t)param.cv_folds);
     srand ( (unsigned int)time(NULL) ); // randomize
-    for(I=0; I<param.nI; I++) folds[I] = rand() % param.cv_folds; // produce folds
-    // count number of items in each fold
-    for(t=0; t<param.N; t++)  fold_counts[ folds[param.dat_item->get(t)] ]++;
+    for(I=0; I<param.nI; I++) folds[I] = (NPAR)(rand() % param.cv_folds); // produce folds
+    for(t=0; t<param.N; t++)  fold_counts[ folds[param.dat_item[t]/*->get(t)*/] ]++;
     // create and fit multiple problems
     HMMProblem* hmms[param.cv_folds];
     int q = param.quiet;
     param.quiet = 1;
     for(f=0; f<param.cv_folds; f++) {
-//        switch(param.structure)
-//        {
-//            case STRUCTURE_SKILL: // Conjugate Gradient Descent
-//            case STRUCTURE_GROUP: // Conjugate Gradient Descent
-                hmms[f] = new HMMProblem(&param);
-//                break;
-//        }
+        hmms[f] = new HMMProblem(&param);
         // block respective data - do not fit the data belonging to the fold
         NPAR *saved_obs = Calloc(NPAR, (size_t)fold_counts[f]);
         NDAT count_saved = 0;
         for(t=0; t<param.N; t++) {
-            if( folds[ param.dat_item->get(t) ] == f ) {
-                saved_obs[count_saved++] = param.dat_obs->get(t);
-                param.dat_obs->set(t, -1);
+            if( folds[ param.dat_item[t]/*->get(t)*/ ] == f ) {
+                saved_obs[count_saved++] = param.dat_obs[t];
+                param.dat_obs[t]=-1;//->set(t, -1);
             }
         }
         // now compute
@@ -1049,8 +1065,8 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename) {
         // UN-block respective data
         count_saved = 0;
         for(t=0; t<param.N; t++)
-            if( folds[ param.dat_item->get(t) ] == f )
-                param.dat_obs->set(t, saved_obs[count_saved++]);
+            if( folds[ param.dat_item[t]/*->get(t)*/ ] == f )
+                param.dat_obs[t]=saved_obs[count_saved++];//->set(t, saved_obs[count_saved++]);
         free(saved_obs);
         if(q == 0)
             printf("fold %d is done\n",f+1);
@@ -1077,16 +1093,16 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename) {
     }
 	// deal with null skill
 	for(t=0; t<param.N; t++) {
-		o = param.dat_obs->get(t);//[t]; correct: obs 1 (0 code), incorect obs 2 (1 code), hence 1-code is the conversion
+		o = param.dat_obs[t];//[t]; correct: obs 1 (0 code), incorect obs 2 (1 code), hence 1-code is the conversion
         isTarget = (NPAR)(param.cv_target_obs == o);
-		g = param.dat_group->get(t);//[t];
+		g = param.dat_group[t];
         dt.g = g;
         f = folds[g];
         
         NCAT *ar;
         int n;
         if(param.multiskill==0) {
-            k = param.dat_skill->get(t);
+            k = param.dat_skill[t];
             ar = &k;
             n = 1;
         } else {

@@ -122,11 +122,11 @@ void projectsimplex(NUMBER* ar, NPAR size) {
 		for(i=0; i<size; i++) {
 			at_lo[i] = (ar[i]<0)?1:0;
 			ar[i] = (at_lo[i]==1)?0:ar[i];
-			num_at_lo += at_lo[i];
+			num_at_lo = (NPAR)(num_at_lo + at_lo[i]);
             
 			at_hi[i] = (ar[i]>1)?1:0;
 			ar[i] = (at_hi[i]==1)?1:ar[i];
-			num_at_hi += at_hi[i];
+			num_at_hi = (NPAR)(num_at_hi + at_hi[i]);
 			
 			err += ar[i];
 		}
@@ -136,6 +136,14 @@ void projectsimplex(NUMBER* ar, NPAR size) {
 			ar[i] -= (at_lo[i]==0 && at_hi[i]==0)?lambda:0;
 		
 	} // until satisfied
+    // force last to be 1 - sum of all but last
+    err = 1;
+    for(i=0; i<(size-1); i++) err -= ar[i];
+    ar[size-1] = err;
+    err = 1;
+    for(i=1; i<(size-0); i++) err -= ar[i];
+    ar[0] = err;
+
 	free(at_hi);
 	free(at_lo);
 }
@@ -154,30 +162,43 @@ void projectsimplexbounded(NUMBER* ar, NUMBER *lb, NUMBER *ub, NPAR size) {
 		for(i=0; i<size; i++) {
 			at_lo[i] = (ar[i]<lb[i])?1:0;
 			ar[i] = (at_lo[i]==1)?lb[i]:ar[i];
-			num_at_lo += at_lo[i];
+			num_at_lo = (NPAR)( num_at_lo + at_lo[i] );
 			
 			at_hi[i] = (ar[i]>ub[i])?1:0;
 			ar[i] = (at_hi[i]==1)?ub[i]:ar[i];
-			num_at_hi += at_hi[i];
+			num_at_hi = (NPAR)( num_at_hi + at_hi[i] );
 			
 			err += ar[i];
 		}
 		if (size > (num_at_hi + num_at_lo) )
 			lambda = err / (size - (num_at_hi + num_at_lo));
+        
 		for(i=0; i<size; i++)
 			ar[i] -= (at_lo[i]==0 && at_hi[i]==0)?lambda:0;
 		
 	} // until satisfied
+    // force last to be 1 - sum of all but last
+    err = 1;
+    for(i=0; i<(size-1); i++) err -= ar[i];
+    ar[size-1] = err;
+    err = 1;
+    for(i=1; i<(size-0); i++) err -= ar[i];
+    ar[0] = err;
+    
 	free(at_hi);
 	free(at_lo);
 }
+
+
 
 NUMBER safe01num(NUMBER val) {
     return (val<=0)? SAFETY : ( (val>=1)? (1-SAFETY) : val );
 }
 
 NUMBER safe0num(NUMBER val) {
-    return (val<SAFETY)?SAFETY:val;
+    //    return (fabs(val)<SAFETY)?(SAFETY*(val>=0) + SAFETY*(val<0)*(-1)):val;
+    NUMBER a_sign = (val<0)?-1:1;
+    return (fabs(val)<SAFETY)?a_sign*SAFETY:val;
 }
 
 NUMBER safelog(NUMBER val) {
@@ -287,6 +308,7 @@ void set_param_defaults(struct param *param) {
     param->item_complexity = NULL;
 	// configurable - set
 	param->tol                   = 0.01;
+	param->scaled                = 0;
 	param->time                  = 0;
 	param->maxiter               = 200;
 	param->quiet                 = 0;
@@ -357,12 +379,12 @@ void destroy_input_data(struct param *param) {
 	if(param->param_hi != NULL) free(param->param_hi);
 	
     // data - checks if pointers to data are null anyway (whether we delete linear columns of data or not)
-	if(param->dat_obs != NULL) delete param->dat_obs;
-	if(param->dat_group != NULL) delete param->dat_group;
-	if(param->dat_item != NULL) delete param->dat_item;
-	if(param->dat_skill != NULL) delete param->dat_skill;
+	if(param->dat_obs != NULL) free( param->dat_obs );
+	if(param->dat_group != NULL) free( param->dat_group );
+	if(param->dat_item != NULL) free( param->dat_item );
+	if(param->dat_skill != NULL) free( param->dat_skill );
 	if(param->dat_multiskill != NULL) delete param->dat_multiskill;
-	if(param->dat_time != NULL) delete param->dat_time;
+	if(param->dat_time != NULL) free( param->dat_time );
     
     // not null skills
     for(NDAT kg=0;kg<param->nSeq; kg++) {
@@ -486,6 +508,11 @@ void RecycleFitData(NCAT xndat, struct data** x_data, struct param *param) {
 // penalties
 NUMBER L2penalty(param* param, NUMBER w) {
     NUMBER penalty_offset = 0.5;
-    return (param->C > 0)? 0.5*param->C*fabs((w-penalty_offset)) : 0;
+    return (param->C != 0)? 0.5*param->C*fabs((w-penalty_offset)) : 0;
+}
+
+// pre-specified
+NUMBER L2penalty(param* param, NUMBER w, NUMBER penalty_offset) {
+    return (param->C != 0)? 0.5*param->C*fabs((w-penalty_offset)) : 0;
 }
 

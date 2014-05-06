@@ -44,8 +44,7 @@ using namespace std;
 #define COLUMNS 4
 
 struct param param;
-//static int max_line_length;
-//static NDAT global_predict_N;
+static char *line = NULL;
 NUMBER* metrics;
 map<string,NCAT> data_map_group_fwd;
 map<NCAT,string> data_map_group_bwd;
@@ -67,7 +66,7 @@ int main (int argc, char ** argv) {
 	char predict_file[1024];
 	
 	parse_arguments(argc, argv, input_file, model_file, predict_file);
-    param.predictions = 2; // force it on, since we, you know, predictinng :)
+    // param.predictions = 2; // do not force it on
 
     // read data
     if(param.binaryinput==0) {
@@ -99,22 +98,26 @@ int main (int argc, char ** argv) {
     hmm->readModelBody(fid, &param_model, &line_no, overwrite);
   	fclose(fid);
 	free(line);
-
+    
 	if(param.quiet == 0)
         printf("input read, nO=%d, nG=%d, nK=%d, nI=%d\n",param.nO, param.nG, param.nK, param.nI);
 	
 	clock_t tm = clock();
-    if(param.metrics>0 || param.predictions>0) {
+//    if(param.metrics>0 || param.predictions>0) {
         metrics = Calloc(NUMBER, (size_t)7);// LL, AIC, BIC, RMSE, RMSEnonull, Acc, Acc_nonull;
-    }
+//    }
     hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_multiskill, false/*only unlabelled*/);
 //    predict(predict_file, hmm);
 	if(param.quiet == 0)
 		printf("predicting is done in %8.6f seconds\n",(NUMBER)(clock()-tm)/CLOCKS_PER_SEC);
     // THERE IS NO METRICS, WE PREDICT UNKNOWN, however, if we force prediction of all we do
-    if( param.predictions>0 ) {
-        printf("predicted model LL=%15.7f, AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f)\n",metrics[0], metrics[1], metrics[2], metrics[3], metrics[4], metrics[5], metrics[6]);
-    }
+//    if( param.predictions>0 ) {
+        printf("trained model LL=%15.7f (%15.7f), AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f)\n",
+               metrics[0], metrics[1], // ll's
+               2*hmm->getNparams() + 2*metrics[0], hmm->getNparams()*safelog(param.N) + 2*metrics[0],
+               metrics[2], metrics[3], // rmse's
+               metrics[4], metrics[5]); // acc's
+//    }
     free(metrics);
     
 	destroy_input_data(&param);
@@ -158,14 +161,6 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *model_f
 					exit_with_help();
 				}
 				break;
-//			case 'n':
-//				param.nS = (NPAR)atoi(argv[i]);
-//				if(param.nS<2) {
-//					fprintf(stderr,"ERROR! Number of hidden states should be at least 2\n");
-//					exit_with_help();
-//				}
-//				//fprintf(stdout, "fit single skill=%d\n",param.quiet);
-//				break;
             case  'd':
 				param.multiskill = argv[i][0]; // just grab first character (later, maybe several)
                 break;
@@ -202,9 +197,13 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *model_f
 	}
 	else {
 		strcpy(model_file_name,argv[i++]); // copy and advance
-		if(i>=argc) // no prediction file name specified
-			strcpy(predict_file_name,"predict_hmm.txt"); // the predict file too
-		else
+		if(i>=argc) {// no prediction file name specified
+			//strcpy(predict_file_name,"predict_hmm.txt"); // the predict file too
+            param.predictions = 0;
+        }
+		else {
+            param.predictions = 1;
 			strcpy(predict_file_name,argv[i]);
+        }
 	}
 }

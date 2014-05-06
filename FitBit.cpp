@@ -35,7 +35,7 @@ FitBit::FitBit(NPAR a_nS, NPAR a_nO, NCAT a_nK, NCAT a_nG, NUMBER a_tol) {
     this->nG = a_nG;
     this->nK = a_nK;
     this->tol = a_tol;
-    this->PI = NULL;
+    this->pi = NULL;
     this->A = NULL;
     this->B = NULL;
     this->PIm1 = NULL;
@@ -53,10 +53,42 @@ FitBit::FitBit(NPAR a_nS, NPAR a_nO, NCAT a_nK, NCAT a_nG, NUMBER a_tol) {
     this->dirPIm1 = NULL;
     this->dirAm1 = NULL;
     this->dirBm1 = NULL;
+    this->xndat = 0;
+    this->x_data = 0;
+    this->projecttosimplex = 1;
+}
+
+FitBit::FitBit(NPAR a_nS, NPAR a_nO, NCAT a_nK, NCAT a_nG, NUMBER a_tol, NPAR a_projecttosimplex){
+    this->nS = a_nS;
+    this->nO = a_nO;
+    this->nG = a_nG;
+    this->nK = a_nK;
+    this->tol = a_tol;
+    this->pi = NULL;
+    this->A = NULL;
+    this->B = NULL;
+    this->PIm1 = NULL;
+    this->Am1 = NULL;
+    this->Bm1 = NULL;
+    this->gradPI = NULL;
+    this->gradA = NULL;
+    this->gradB = NULL;
+    this->gradPIm1 = NULL;
+    this->gradAm1 = NULL;
+    this->gradBm1 = NULL;
+    this->PIcopy = NULL;
+    this->Acopy = NULL;
+    this->Bcopy = NULL;
+    this->dirPIm1 = NULL;
+    this->dirAm1 = NULL;
+    this->dirBm1 = NULL;
+    this->xndat = 0;
+    this->x_data = 0;
+    this->projecttosimplex = a_projecttosimplex;
 }
 
 FitBit::~FitBit() {
-//    if(this->PI != NULL) free(this->PI); // these are usually linked
+//    if(this->pi != NULL) free(this->PI); // these are usually linked
 //    if(this->A != NULL) free2D<NUMBER>(this->A, this->nS); // these are usually linked
 //    if(this->B != NULL) free2D<NUMBER>(this->B, this->nS); // these are usually linked
     if(this->PIm1 != NULL) free(this->PIm1);
@@ -77,7 +109,7 @@ FitBit::~FitBit() {
 }
 
 void FitBit::init(NUMBER* &a_PI, NUMBER** &a_A, NUMBER** &a_B) {
-//    if(this->PI != NULL) {
+//    if(this->pi != NULL) {
         if(a_PI == NULL)
             a_PI = init1D<NUMBER>((NDAT)this->nS); // init1DNumber(this->nS);
         else
@@ -97,32 +129,34 @@ void FitBit::init(NUMBER* &a_PI, NUMBER** &a_A, NUMBER** &a_B) {
 //    }
 }
 
-void FitBit::linkPar(NUMBER *a_PI, NUMBER **a_A, NUMBER **a_B) {
-    this->PI = a_PI;
+void FitBit::link(NUMBER *a_PI, NUMBER **a_A, NUMBER **a_B, NCAT a_xndat, struct data** a_x_data) {
+    this->pi = a_PI;
     this->A  = a_A;
     this->B  = a_B;
+    this->xndat = a_xndat;
+    this->x_data = a_x_data;
 }
 
 void FitBit::toZero(NUMBER *a_PI, NUMBER **a_A, NUMBER **a_B) {
-    if(this->PI != NULL && a_PI != NULL) toZero1D<NUMBER>(a_PI, (NDAT)this->nS);
+    if(this->pi != NULL && a_PI != NULL) toZero1D<NUMBER>(a_PI, (NDAT)this->nS);
     if(this->A  != NULL && a_A  != NULL) toZero2D<NUMBER>(a_A,  (NDAT)this->nS, (NDAT)this->nS);
     if(this->B  != NULL && a_B  != NULL) toZero2D<NUMBER>(a_B,  (NDAT)this->nS, (NDAT)this->nO);
 }
 
 void FitBit::copy(NUMBER* &soursePI, NUMBER** &sourseA, NUMBER** &sourseB, NUMBER* &targetPI, NUMBER** &targetA, NUMBER** &targetB){
-    if(this->PI != NULL) cpy1D<NUMBER>(soursePI, targetPI, (NDAT)this->nS);
+    if(this->pi != NULL) cpy1D<NUMBER>(soursePI, targetPI, (NDAT)this->nS);
     if(this->A  != NULL) cpy2D<NUMBER>(sourseA,  targetA,  (NDAT)this->nS, (NDAT)this->nS);
     if(this->B  != NULL) cpy2D<NUMBER>(sourseB,  targetB,  (NDAT)this->nS, (NDAT)this->nO);
 }
 
 void FitBit::add(NUMBER *soursePI, NUMBER **sourseA, NUMBER **sourseB, NUMBER *targetPI, NUMBER **targetA, NUMBER **targetB){
-    if(this->PI != NULL) add1DNumbersWeighted(soursePI, targetPI, this->nS, 1.0);
+    if(this->pi != NULL) add1DNumbersWeighted(soursePI, targetPI, this->nS, 1.0);
     if(this->A  != NULL) add2DNumbersWeighted(sourseA,  targetA,  this->nS, this->nS, 1.0);
     if(this->B  != NULL) add2DNumbersWeighted(sourseB,  targetB,  this->nS, this->nO, 1.0);
 }
 
 void FitBit::destroy(NUMBER* &a_PI, NUMBER** &a_A, NUMBER** &a_B) {
-    if(this->PI != NULL && a_PI != NULL) free(a_PI);
+    if(this->pi != NULL && a_PI != NULL) free(a_PI);
     if(this->A  != NULL && a_A  != NULL) free2D<NUMBER>(a_A, (NDAT)this->nS);
     if(this->B  != NULL && a_B  != NULL) free2D<NUMBER>(a_B, (NDAT)this->nS);
     a_PI = NULL;
@@ -133,7 +167,7 @@ void FitBit::destroy(NUMBER* &a_PI, NUMBER** &a_A, NUMBER** &a_B) {
 void FitBit::init(enum FIT_BIT_SLOT fbs){
     switch (fbs) {
         case FBS_PAR:
-            init(this->PI, this->A, this->B);
+            init(this->pi, this->A, this->B);
             break;
         case FBS_PARm1:
             init(this->PIm1, this->Am1, this->Bm1);
@@ -158,7 +192,7 @@ void FitBit::init(enum FIT_BIT_SLOT fbs){
 void FitBit::toZero(enum FIT_BIT_SLOT fbs){
     switch (fbs) {
         case FBS_PAR:
-            toZero(this->PI, this->A, this->B);
+            toZero(this->pi, this->A, this->B);
             break;
         case FBS_PARm1:
             toZero(this->PIm1, this->Am1, this->Bm1);
@@ -183,7 +217,7 @@ void FitBit::toZero(enum FIT_BIT_SLOT fbs){
 void FitBit::destroy(enum FIT_BIT_SLOT fbs){
     switch (fbs) {
         case FBS_PAR:
-            destroy(this->PI, this->A, this->B);
+            destroy(this->pi, this->A, this->B);
             break;
         case FBS_PARm1:
             destroy(this->PIm1, this->Am1, this->Bm1);
@@ -208,7 +242,7 @@ void FitBit::destroy(enum FIT_BIT_SLOT fbs){
 void FitBit::get(enum FIT_BIT_SLOT fbs, NUMBER* &a_PI, NUMBER** &a_A, NUMBER** &a_B) {
     switch (fbs) {
         case FBS_PAR:
-            a_PI = this->PI;
+            a_PI = this->pi;
             a_A  = this->A;
             a_B  = this->B;
             break;
@@ -243,26 +277,26 @@ void FitBit::get(enum FIT_BIT_SLOT fbs, NUMBER* &a_PI, NUMBER** &a_A, NUMBER** &
 }
 
 void FitBit::copy(enum FIT_BIT_SLOT sourse_fbs, enum FIT_BIT_SLOT target_fbs) {
-    NUMBER *soursePI;
-    NUMBER **sourseA;
-    NUMBER **sourseB;
+    NUMBER *soursePI = NULL;
+    NUMBER **sourseA = NULL;
+    NUMBER **sourseB = NULL;
     get(sourse_fbs, soursePI, sourseA, sourseB);
-    NUMBER *targetPI;
-    NUMBER **targetA;
-    NUMBER **targetB;
+    NUMBER *targetPI = NULL;
+    NUMBER **targetA = NULL;
+    NUMBER **targetB = NULL;
     get(target_fbs, targetPI, targetA, targetB);
     
     copy(soursePI, sourseA, sourseB, targetPI, targetA, targetB);
 }
 
 void FitBit::add(enum FIT_BIT_SLOT sourse_fbs, enum FIT_BIT_SLOT target_fbs) {
-    NUMBER *soursePI;
-    NUMBER **sourseA;
-    NUMBER **sourseB;
+    NUMBER *soursePI = NULL;
+    NUMBER **sourseA = NULL;
+    NUMBER **sourseB = NULL;
     get(sourse_fbs, soursePI, sourseA, sourseB);
-    NUMBER *targetPI;
-    NUMBER **targetA;
-    NUMBER **targetB;
+    NUMBER *targetPI = NULL;
+    NUMBER **targetA = NULL;
+    NUMBER **targetB = NULL;
     get(target_fbs, targetPI, targetA, targetB);
     
     add(soursePI, sourseA, sourseB, targetPI, targetA, targetB);
@@ -272,7 +306,7 @@ bool FitBit::checkConvergence() {
 	NUMBER critetion = 0;
 	for(NPAR i=0; i<this->nS; i++)
 	{
-		if(this->PI != NULL) critetion += pow( this->PI[i]-this->PIm1[i], 2 )/*:0*/;
+		if(this->pi != NULL) critetion += pow( this->pi[i]-this->PIm1[i], 2 )/*:0*/;
 		for(NPAR j=0; (this->A != NULL) && j<this->nS; j++) {
 			critetion += pow(this->A[i][j] - this->Am1[i][j],2);
 		}
@@ -285,11 +319,11 @@ bool FitBit::checkConvergence() {
 
 void FitBit::doLog10ScaleGentle(enum FIT_BIT_SLOT fbs) {
     // fbs - gradient or direction
-    NUMBER *a_PI;
-    NUMBER **a_A;
-    NUMBER **a_B;
+    NUMBER *a_PI = NULL;
+    NUMBER **a_A = NULL;
+    NUMBER **a_B = NULL;
     get(fbs, a_PI, a_A, a_B);
-	if(this->PI != NULL) doLog10Scale1DGentle(a_PI, this->PI, this->nS);
+	if(this->pi != NULL) doLog10Scale1DGentle(a_PI, this->pi, this->nS);
 	if(this->A  != NULL) doLog10Scale2DGentle(a_A,  this->A,  this->nS, this->nS);
 	if(this->B  != NULL) doLog10Scale2DGentle(a_B,  this->B,  this->nS, this->nO);
 }
