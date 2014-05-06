@@ -203,12 +203,14 @@ To fit a BKT model of this data using an EM algorithm run the following command:
 
 sh> ./trainhmm -s 1.1 -m 1 -p 1 toy_data.txt model.txt predict.txt
 
-The model will have 90% accuracy and root mean squared error (RMSE) = 0.3227 and
-the recovered BKT parameters would be: pLo=0.50, pT=0.17, pS=0.00, pG=0.00 .
+The model will have 90% accuracy and root mean squared error (RMSE) = 0.3027 and
+the recovered BKT parameters would be: pLo=0.00, pT=0.17, pS=0.00, pG=0.00.
+Overall loglikelihood, actually, goes up from 9.3763 ot 10.4380.
 
-If we fit BKT model using Conjugate Gradient method using '-s 1.2' argument, the
+If we fit BKT model using Gradient Descent method using '-s 1.2' argument, the
 recovered parameters would be: pLo=0.00, pT=0.18, pS=0.08, pG=0.03, the accuracy
-would remain at 90% while RMSE = 0.2982.
+would remain at 90% while RMSE = 0.2982. Loglikelihood changes from  9.3763 to
+6.3555.
 
 To generate predictions using a previously fit model run the following command 
 (do not forget that prediction will only be generated for rows where observation
