@@ -578,17 +578,23 @@ void HMMProblem::setGradA (FitBit *fb){
 void HMMProblem::setGradB (FitBit *fb){
     if(this->p->block_fitting[2]>0) return;
     NDAT t;
-    NPAR o, i, m;
+    NPAR o, o0, i, j, m;
     struct data* dt;
     for(NCAT x=0; x<fb->xndat; x++) {
         dt = fb->x_data[x];
         if( dt->cnt!=0 ) continue;
-        for(t=0; t<dt->n; t++) {
-            o = this->p->dat_obs[ dt->ix[t] ];//->get( dt->ix[t] );
+        for(t=0; t<dt->n; t++) { // Levinson MMFST
+            o  = this->p->dat_obs[ dt->ix[t] ];//->get( dt->ix[t] );
+            o0 = this->p->dat_obs[ dt->ix[0] ];//->get( dt->ix[t] );
             if(o<0) // if no observation -- skip
                 continue;
-            for(i=0; i<this->p->nS; i++)
-                fb->gradB[i][o] -= dt->alpha[t][i] * dt->beta[t][i] / safe0num(dt->p_O_param * getB(dt,i,o));
+            for(j=0; j<this->p->nS; j++)
+                if(t==0) {
+                    fb->gradB[j][o] -= (o0==o) * getPI(dt,j) * dt->beta[0][j];
+                } else {
+                    for(i=0; i<this->p->nS; i++)
+                        fb->gradB[j][o] -= ( dt->alpha[t-1][i] * getA(dt,i,j) * dt->beta[t][j] /*+ (o0==o) * getPI(dt,j) * dt->beta[0][j]*/ ) / safe0num(dt->p_O_param); // Levinson MMFST
+                }
         }
         // penalty
         for(i=0; i<this->p->nS && this->p->C!=0; i++)
