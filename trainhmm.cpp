@@ -50,6 +50,25 @@ void cross_validate(NUMBER* metrics, const char *filename, clock_t *tm_fit, cloc
 void cross_validate_item(NUMBER* metrics, const char *filename, clock_t *tm_fit, clock_t *tm_predict);//SEQ
 void cross_validate_nstrat(NUMBER* metrics, const char *filename, clock_t *tm_fit, clock_t *tm_predict);//SEQ
 
+static int max_line_length;
+static char * line;
+static char* readline(FILE *fid) {
+	int length = 0;
+	
+	if(fgets(line,max_line_length,fid) == NULL)
+		return NULL;
+	
+	while(strrchr(line,'\n') == NULL && strrchr(line,'\r') == NULL) // do take both line endings
+	{
+		max_line_length *= 2;
+		line = (char *) realloc(line, (size_t)max_line_length);
+		length = (int) strlen(line);
+		if(fgets(line+length,max_line_length-length,fid) == NULL)
+			break;
+	}
+	return line;
+}
+
 int main (int argc, char ** argv) {
     
 	clock_t tm_all = clock();//overall time //SEQ
