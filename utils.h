@@ -107,6 +107,7 @@ enum STRUCTURE {
 struct FitResult {
     int iter;   // interations
     NUMBER pO0; // starting log-likelihood
+    NUMBER pOmid; // working - especially for stopping criteria on LL improvement
     NUMBER pO;  // final log-likelihood
     int conv;   // converged? (maybe just went to max-iter)
     NDAT ndat;
@@ -155,6 +156,8 @@ struct param {
 	NPAR cv_folds; // cross-validation folds
 	NPAR cv_strat; // cross-validation stratification
 	NPAR cv_target_obs; // cross-validation target observation to validate prediction of
+    char cv_folds_file[1024]; // file where to store or draw from the folds
+    NPAR cv_inout_flag; // are we writing the folds out ('o') or reading them in ('i')
     // data
     NPAR* dat_obs;
     NCAT* dat_group;
@@ -265,10 +268,6 @@ template<typename T> T*** init3D(NDAT size1, NDAT size2, NDAT size3) {
 	}
 	return ar;
 }
-//NUMBER* init1DNumber(NDAT size);
-//NUMBER** init2DNumber(NDAT size1, NPAR size2);
-//NUMBER*** init3DNumber(NCAT size1, NDAT size2, NPAR size3);
-//NPAR** init2DNCat(NCAT size1, NCAT size2);
 
 template<typename T> void free2D(T** ar, NDAT size1) {
 	for(NDAT i=0; i<size1; i++)
@@ -287,10 +286,6 @@ template<typename T> void free3D(T*** ar, NDAT size1, NDAT size2) {
     //    &ar = NULL;
 }
 
-//void free2DNumber(NUMBER **ar, NDAT size1);
-//void free3DNumber(NUMBER ***ar, NCAT size1, NDAT size2);
-//void free2DNCat(NCAT **ar, NCAT size1);
-
 template<typename T> void cpy1D(T* source, T* target, NDAT size) {
     memcpy( target, source, sizeof(T)*(size_t)size );
 }
@@ -303,10 +298,6 @@ template<typename T> void cpy3D(T*** source, T*** target, NDAT size1, NDAT size2
         for(NDAT i=0; i<size2; i++)
             memcpy( target[t][i], source[t][i], sizeof(T)*(size_t)size3 );
 }
-
-//void cpy1DNumber(NUMBER* source, NUMBER* target, NDAT size);
-//void cpy2DNumber(NUMBER** source, NUMBER** target, NDAT size1, NPAR size2);
-//void cpy3DNumber(NUMBER*** source, NUMBER*** target, NDAT size1, NPAR size2, NPAR size3);
 
 template<typename T> void swap1D(T* source, T* target, NDAT size) {
     T* buffer = init1D<T>(size); // init1<NUMBER>(size);
@@ -352,6 +343,7 @@ void zeroLabels(struct param* param); // set counts in all data sequences to zer
 // The heavy end - common functionality
 //
 void set_param_defaults(struct param *param);
+void reset_param_defaults(struct param *param); // to reflect upon number of states and observations if those are not 2 and 2 respectively
 void RecycleFitData(NCAT xndat, struct data** x_data, struct param *param);
 
 // penalties

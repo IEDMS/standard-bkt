@@ -26,7 +26,6 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
  */
-
 #include "utils.h"
 using namespace std;
 
@@ -337,6 +336,8 @@ void set_param_defaults(struct param *param) {
 	param->cv_folds = 0;
 	param->cv_strat = 'g'; // default group(student)-stratified
     param->cv_target_obs = 0; // 1st state to validate agains by default, cv_folds enables cross-validation
+    param->cv_folds_file[0] = 0; // empty folds file
+    param->cv_inout_flag = 'o'; // default rule, we're writing folds out
     param->multiskill = 0; // single skill per ovservation by default
     // vocabilaries
     param->map_group_fwd = NULL;
@@ -506,6 +507,8 @@ void RecycleFitData(NCAT xndat, struct data** x_data, struct param *param) {
 }
 
 // penalties
+
+// uniform
 NUMBER L2penalty(param* param, NUMBER w) {
     NUMBER penalty_offset = 0.5;
     return (param->C != 0)? 0.5*param->C*fabs((w-penalty_offset)) : 0;

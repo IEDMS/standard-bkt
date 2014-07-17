@@ -46,9 +46,9 @@ struct param param;
 void exit_with_help();
 void parse_arguments(int argc, char **argv, char *input_file_name, char *output_file_name, char *predict_file_name);
 bool read_and_structure_data(const char *filename);
-void cross_validate(NUMBER* metrics, const char *filename);
-void cross_validate_item(NUMBER* metrics, const char *filename);
-void cross_validate_nstrat(NUMBER* metrics, const char *filename);
+void cross_validate(NUMBER* metrics, const char *filename, clock_t *tm_fit, clock_t *tm_predict);//SEQ
+void cross_validate_item(NUMBER* metrics, const char *filename, clock_t *tm_fit, clock_t *tm_predict);//SEQ
+void cross_validate_nstrat(NUMBER* metrics, const char *filename, clock_t *tm_fit, clock_t *tm_predict);//SEQ
 
 int main (int argc, char ** argv) {
     
