@@ -1,6 +1,6 @@
 /*
  
- Copyright (c) 2012, Michael (Mikhail) Yudelson
+ Copyright (c) 2012-2014, Michael (Mikhail) Yudelson
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@
 #include "utils.h"
 
 //#define bin_input_file_verstion 1
-#define bin_input_file_verstion 2 // increase number of skills students to 4 bytes
+#define bin_input_file_verstion 2 // increase number of skills/students to a 4 byte integer
 
 class InputUtil {
 public:

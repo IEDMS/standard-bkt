@@ -1,6 +1,6 @@
 /*
  
- Copyright (c) 2012, Michael (Mikhail) Yudelson
+ Copyright (c) 2012-2014, Michael (Mikhail) Yudelson
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -110,14 +110,13 @@ int main (int argc, char ** argv) {
 //    predict(predict_file, hmm);
 	if(param.quiet == 0)
 		printf("predicting is done in %8.6f seconds\n",(NUMBER)(clock()-tm)/CLOCKS_PER_SEC);
-    // THERE IS NO METRICS, WE PREDICT UNKNOWN, however, if we force prediction of all we do
-//    if( param.predictions>0 ) {
+    //if( param.predictions>0 ) {
         printf("trained model LL=%15.7f (%15.7f), AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f)\n",
                metrics[0], metrics[1], // ll's
                2*hmm->getNparams() + 2*metrics[0], hmm->getNparams()*safelog(param.N) + 2*metrics[0],
                metrics[2], metrics[3], // rmse's
                metrics[4], metrics[5]); // acc's
-//    }
+    //}
     free(metrics);
     
 	destroy_input_data(&param);

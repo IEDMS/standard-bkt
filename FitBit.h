@@ -1,6 +1,6 @@
 /*
  
- Copyright (c) 2012, Michael (Mikhail) Yudelson
+ Copyright (c) 2012-2014, Michael (Mikhail) Yudelson
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -84,7 +84,7 @@ public:
     void destroy(enum FIT_BIT_SLOT fbs);
     void copy(enum FIT_BIT_SLOT sourse_fbs, enum FIT_BIT_SLOT target_fbs);
     void add(enum FIT_BIT_SLOT sourse_fbs, enum FIT_BIT_SLOT target_fbs);
-    bool checkConvergence();
+    bool checkConvergence(FitResult *fr);
     void doLog10ScaleGentle(enum FIT_BIT_SLOT fbs);
 private:
     NUMBER tol;
