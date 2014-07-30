@@ -349,7 +349,7 @@ void set_param_defaults(struct param *param) {
 	// derived from data - set to 0
 	param->N  = 0; //will be dynamically set in read_data_...()
 	param->nS = 2;
-	param->nO = 0;
+	param->nO = 2;
 	param->nG = 0;
 	param->nK = 0;
 	param->nI = 0;
