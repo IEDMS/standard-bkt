@@ -365,6 +365,13 @@ void set_param_defaults(struct param *param) {
     param->N_null = 0;
     param->n_null_skill_group = 0;
     param->null_skills = NULL;
+	// fitting specific - Armijo rule
+	param->ArmijoC1            = 1e-4;
+	param->ArmijoC2            = 0.9;
+	param->ArmijoReduceFactor  = 2;//1/0.9;//
+	param->ArmijoSeed          = 1; //1; - since we use smooth stepping 1 is the only thing we need
+    param->ArmijoMinStep       = 0.001; //  0.000001~20steps, 0.001~10steps
+    // temporary experimental;
     param->block_fitting[0] = 0; // no bocking fitting for PI
     param->block_fitting[1] = 0; // no bocking fitting for A
     param->block_fitting[2] = 0; // no bocking fitting for B

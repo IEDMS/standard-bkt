@@ -81,18 +81,18 @@ int main (int argc, char ** argv) {
     if(!param.quiet)
         printf("trainhmm starting...\n");
     
+    // parse parameters first
+	parse_arguments(argc, argv, input_file, output_file, predict_file);
+    
     clock_t tm_read = clock();//overall time //SEQ
-    int red_ok = read_and_structure_data(input_file);
+    int read_ok = read_and_structure_data(input_file);
     tm_read = (NUMBER)(clock()-tm_read);//SEQ
     
-	if( ! red_ok )
+	if( ! read_ok )
         return 0;
     
-    // now we know the real data
-	parse_arguments(argc, argv, input_file, output_file, predict_file);
     // to reflect upon number of states and observations if those are not 2 and 2 respectively
 	reset_param_defaults(&param);
-    
     
 //    write_pLo_irt();
     
