@@ -158,7 +158,7 @@ void HMMProblem::init(struct param *param) {
 	offset = (NPAR)(nS + nS*nS);
 	for(i=0; i<nS; i++)
 		for(j=0; j<nO; j++) {
-			idx = (NPAR)(offset + i*nS + j);
+			idx = (NPAR)(offset + i*nO + j);
 			lbB[i][j] = this->p->param_lo[idx];
 			ubB[i][j] = this->p->param_hi[idx];
 		}
@@ -805,7 +805,7 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, /*StripedArray<N
                 pLe_denom = 0.0;
                 // 1. pLe =  (L .* B(:,o)) ./ ( L'*B(:,o)+1e-8 );
                 for(i=0; i<nS; i++)
-                    pLe_denom += group_skill_map[g][k][i] * getB(dt,i,o);  ///// TODO: this is local_pred[o]!!!//UNBOOST
+                    pLe_denom += group_skill_map[g][k][i] * getB(dt,i,o);  // TODO: this is local_pred[o]!!!//UNBOOST
                 for(i=0; i<nS; i++)
                     pLe[i] = group_skill_map[g][k][i] * getB(dt,i,o) / safe0num(pLe_denom); //UNBOOST
                 // 2. L = (pLe'*A)';

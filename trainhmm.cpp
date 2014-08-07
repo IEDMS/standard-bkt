@@ -44,7 +44,10 @@ using namespace std;
 
 struct param param;
 void exit_with_help();
-void parse_arguments(int argc, char **argv, char *input_file_name, char *output_file_name, char *predict_file_name);
+
+void parse_arguments_step1(int argc, char **argv, char *input_file_name, char *output_file_name, char *predict_file_name); // things that do not need data file read
+void parse_arguments_step2(int argc, char **argv); // things that do need data file read, namely, number of observations
+
 bool read_and_structure_data(const char *filename);
 void cross_validate(NUMBER* metrics, const char *filename, clock_t *tm_fit, clock_t *tm_predict);//SEQ
 void cross_validate_item(NUMBER* metrics, const char *filename, clock_t *tm_fit, clock_t *tm_predict);//SEQ
@@ -81,18 +84,18 @@ int main (int argc, char ** argv) {
     if(!param.quiet)
         printf("trainhmm starting...\n");
     
-    // parse parameters first
-	parse_arguments(argc, argv, input_file, output_file, predict_file);
+    // parse parameters, step 1
+	parse_arguments_step1(argc, argv, input_file, output_file, predict_file);
     
     clock_t tm_read = clock();//overall time //SEQ
     int read_ok = read_and_structure_data(input_file);
-    tm_read = (NUMBER)(clock()-tm_read);//SEQ
+    tm_read = (clock_t)(clock()-tm_read);//SEQ
     
 	if( ! read_ok )
         return 0;
     
-    // to reflect upon number of states and observations if those are not 2 and 2 respectively
-	reset_param_defaults(&param);
+    // once we know nO (number of observations) parse parameters, step 2
+    parse_arguments_step2(argc, argv);
     
 //    write_pLo_irt();
     
@@ -103,8 +106,8 @@ int main (int argc, char ** argv) {
     // erase blocking labels
     zeroLabels(&param);
 
-    clock_t tm_fit; //SEQ
-    clock_t tm_predict; //SEQ
+    clock_t tm_fit = 0; //SEQ
+    clock_t tm_predict = 0; //SEQ
     
     if(param.cv_folds==0) { // not cross-validation
         // create problem
@@ -219,17 +222,13 @@ void exit_with_help() {
 	exit(1);
 }
 
-void parse_arguments(int argc, char **argv, char *input_file_name, char *output_file_name, char *predict_file_name) {
+void parse_arguments_step1(int argc, char **argv, char *input_file_name, char *output_file_name, char *predict_file_name) {
 	// parse command line options, starting from 1 (0 is path to executable)
 	// go in pairs, looking at whether first in pair starts with '-', if not, stop parsing arguments
     
-    // at this time we should know nO -- the number of observations
+    // at this time we do not know nO (the number of observations) yet
 	int i;
-    int n;
     char *ch, *ch2;
-    bool init_specd = false; // init parameters specified
-    bool lims_specd = false; // parameter limits specified
-    bool stat_specd_gt2 = false; // number of states specified to be >2
 	for(i=1;i<argc;i++)
 	{
 		if(argv[i][0] != '-') break; // end of options stop parsing
@@ -276,7 +275,7 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 					exit_with_help();
 				}
                 if(param.nS != 2) {
-                    stat_specd_gt2 = true;
+                    param.stat_specd_gt2 = true;
                 }
 				break;
 			case 'S':
@@ -318,103 +317,6 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
             case 'f':
                 param.single_skill = (NPAR)atoi(argv[i]);
                 break;
-			case '0': // init_params
-				int len;
-				len = (int)strlen( argv[i] );
-				// count delimiters
-				n = 1; // start with 1
-				for(int j=0;j<len;j++) {
-					n += (argv[i][j]==',')?1:0;
-                    if( (argv[i][j] >= 'a' && argv[i][j] <= 'z') || (argv[i][j] >= 'A' && argv[i][j] <= 'Z') ) {
-                        strcpy(param.initfile, argv[i]);
-                        break;
-                    }
-                }
-                if(param.initfile[0]==0) { // init parameters parameters
-                    // init params
-                    if(param.init_params!=NULL) free(param.init_params);
-                    param.init_params = Calloc(NUMBER, (size_t)n);
-                    // read params and write to params
-                    param.init_params[0] = atof( strtok(argv[i],",\t\n\r") );
-                    for(int j=1; j<n; j++)
-                        param.init_params[j] = atof( strtok(NULL,",\t\n\r") );
-                }
-                init_specd = true;
-				break;
-			case 'l': // lower poundaries
-				len = (int)strlen( argv[i] );
-				// count delimiters
-				n = 1; // start with 1
-				for(int j=0;j<len;j++)
-					n += (NPAR)((argv[i][j]==',')?1:0);
-				// init params
-				if(param.param_lo!=NULL) free(param.param_lo);
-				param.param_lo = Calloc(NUMBER, (size_t)n);
-				// read params and write to params
-				param.param_lo[0] = atof( strtok(argv[i],",\t\n\r") );
-				for(int j=1; j<n; j++)
-					param.param_lo[j] = atof( strtok(NULL,",\t\n\r") );
-                lims_specd = true;
-				break;
-			case 'u': // upper poundaries
-				len = (int)strlen( argv[i] );
-				// count delimiters
-				n = 1; // start with 1
-				for(int j=0;j<len;j++)
-					n += (argv[i][j]==',')?1:0;
-				// init params
-				if(param.param_hi!=NULL) free(param.param_hi);
-				param.param_hi = Calloc(NUMBER, (size_t)n);
-				// read params and write to params
-				param.param_hi[0] = atof( strtok(argv[i],",\t\n\r") );
-				for(int j=1; j<n; j++)
-					param.param_hi[j] = atof( strtok(NULL,",\t\n\r") );
-                lims_specd = true;
-				break;
-			case 'B': // block fitting
-                // first
-				param.block_fitting[0] = (NPAR)atoi( strtok(argv[i],",\t\n\r") );
-                if(param.block_fitting[0]!=0 && param.block_fitting[0]!=1) {
-                    fprintf(stderr,"Values of blocking the fitting flags shuld only be 0 or 1.\n");
-                    exit_with_help();
-                }
-                // second
-                ch = strtok(NULL,",\t\n\r"); // could be NULL (default GD solver)
-                if(ch != NULL) {
-                    param.block_fitting[1] = (NPAR)atoi(ch);
-                    if(param.block_fitting[1]!=0 && param.block_fitting[1]!=1) {
-                        fprintf(stderr,"Values of blocking the fitting flags shuld only be 0 or 1.\n");
-                        exit_with_help();
-                    }
-                }
-                else {
-                    fprintf(stderr,"There should be 3 blockig the fitting flags specified.\n");
-                    exit_with_help();
-                }
-                // third
-                ch = strtok(NULL,",\t\n\r"); // could be NULL (default GD solver)
-                if(ch != NULL) {
-                    param.block_fitting[2] = (NPAR)atoi(ch);
-                    if(param.block_fitting[2]!=0 && param.block_fitting[2]!=1) {
-                        fprintf(stderr,"Values of blocking the fitting flags shuld only be 0 or 1.\n");
-                        exit_with_help();
-                    }
-                }
-                else {
-                    fprintf(stderr,"There should be 3 blockig the fitting flags specified.\n");
-                    exit_with_help();
-                }
-				break;
-			case 'c':
-				param.C = atof(argv[i]);
-				if(param.C < 0) {
-					fprintf(stderr,"Regularization parameter C should be above 0.\n");
-					exit_with_help();
-				}
-				if(param.C > 1000) {
-					fprintf(stderr,"Regularization parameter C is _very) high and might be impractical(%f).\n", param.C);
-				}
-				break;
 			case 'm':
                 param.metrics = atoi( strtok(argv[i],",\t\n\r"));
                 ch = strtok(NULL, "\t\n\r");
@@ -478,6 +380,16 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
                 break;
             case  'd':
 				param.multiskill = argv[i][0]; // just grab first character (later, maybe several)
+            case '0':
+                param.init_reset = true;
+                break;
+            case 'l': // just to keep it a valid option
+                break;
+            case 'u': // just to keep it a valid option
+                break;
+            case 'B': // just to keep it a valid option
+                break;
+            case 'c': // just to keep it a valid option
                 break;
 			default:
 				fprintf(stderr,"unknown option: -%c\n", argv[i-1][1]);
@@ -485,7 +397,8 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 				break;
 		}
 	}
-
+    // post-process checks
+    // -v and -m collision
     if(param.cv_folds>0 && param.metrics>0) { // correct for 0-start coding
         fprintf(stderr,"values for -v and -m cannot be both non-zeros\n");
         exit_with_help();
@@ -495,6 +408,12 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
         param.scaled = 0;
         printf("Scaling can only be enabled for Baum-Welch method. Setting it to off\n");
     }
+    // specifying >2 states via -n and mandatory specification of -0 (initial parameters)
+    if(param.nS > 2 && !param.init_reset) {
+        fprintf(stderr,"when >2 latent states specified via '-n', initial values of parameters have to be explicitly set via '-0'!\n");
+        exit_with_help();
+    }
+    
 	// next argument should be input file name
 	if(i>=argc) // if not
 		exit_with_help(); // leave
@@ -512,6 +431,145 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 		else
 			strcpy(predict_file_name,argv[i]);
 	}
+}
+
+void parse_arguments_step2(int argc, char **argv) {
+	// parse command line options, starting from 1 (0 is path to executable)
+	// go in pairs, looking at whether first in pair starts with '-', if not, stop parsing arguments
+    
+    // at this time we do know nO (the number of observations)
+	int i;
+    int n;
+    char *ch;
+	for(i=1;i<argc;i++)
+	{
+		if(argv[i][0] != '-') break; // end of options stop parsing
+		if(++i>=argc)
+			exit_with_help();
+		switch(argv[i-1][1])
+		{
+			case '0': // init_params
+				int len;
+				len = (int)strlen( argv[i] );
+				// count delimiters
+				n = 1; // start with 1
+				for(int j=0;j<len;j++) {
+					n += (argv[i][j]==',')?1:0;
+                    if( (argv[i][j] >= 'a' && argv[i][j] <= 'z') || (argv[i][j] >= 'A' && argv[i][j] <= 'Z') ) {
+                        strcpy(param.initfile, argv[i]);
+                        break;
+                    }
+                }
+                if(param.initfile[0]==0) { // init parameters parameters
+                    // init params
+                    if(param.init_params!=NULL) free(param.init_params);
+                    param.init_params = Calloc(NUMBER, (size_t)n);
+                    // read params and write to params
+                    param.init_params[0] = atof( strtok(argv[i],",\t\n\r") );
+                    for(int j=1; j<n; j++)
+                        param.init_params[j] = atof( strtok(NULL,",\t\n\r") );
+                }
+				break;
+			case 'l': // lower boundaries
+				len = (int)strlen( argv[i] );
+				// count delimiters
+				n = 1; // start with 1
+				for(int j=0;j<len;j++)
+					n += (NPAR)((argv[i][j]==',')?1:0);
+				// init params
+				if(param.param_lo!=NULL) free(param.param_lo);
+				param.param_lo = Calloc(NUMBER, (size_t)n);
+				// read params and write to params
+				param.param_lo[0] = atof( strtok(argv[i],",\t\n\r") );
+				for(int j=1; j<n; j++)
+					param.param_lo[j] = atof( strtok(NULL,",\t\n\r") );
+                param.lo_lims_specd = true;
+				break;
+			case 'u': // upper boundaries
+				len = (int)strlen( argv[i] );
+				// count delimiters
+				n = 1; // start with 1
+				for(int j=0;j<len;j++)
+					n += (argv[i][j]==',')?1:0;
+				// init params
+				if(param.param_hi!=NULL) free(param.param_hi);
+				param.param_hi = Calloc(NUMBER, (size_t)n);
+				// read params and write to params
+				param.param_hi[0] = atof( strtok(argv[i],",\t\n\r") );
+				for(int j=1; j<n; j++)
+					param.param_hi[j] = atof( strtok(NULL,",\t\n\r") );
+                param.hi_lims_specd = true;
+				break;
+			case 'B': // block fitting
+                // first
+				param.block_fitting[0] = (NPAR)atoi( strtok(argv[i],",\t\n\r") );
+                if(param.block_fitting[0]!=0 && param.block_fitting[0]!=1) {
+                    fprintf(stderr,"Values of blocking the fitting flags shuld only be 0 or 1.\n");
+                    exit_with_help();
+                }
+                // second
+                ch = strtok(NULL,",\t\n\r"); // could be NULL (default GD solver)
+                if(ch != NULL) {
+                    param.block_fitting[1] = (NPAR)atoi(ch);
+                    if(param.block_fitting[1]!=0 && param.block_fitting[1]!=1) {
+                        fprintf(stderr,"Values of blocking the fitting flags shuld only be 0 or 1.\n");
+                        exit_with_help();
+                    }
+                }
+                else {
+                    fprintf(stderr,"There should be 3 blockig the fitting flags specified.\n");
+                    exit_with_help();
+                }
+                // third
+                ch = strtok(NULL,",\t\n\r"); // could be NULL (default GD solver)
+                if(ch != NULL) {
+                    param.block_fitting[2] = (NPAR)atoi(ch);
+                    if(param.block_fitting[2]!=0 && param.block_fitting[2]!=1) {
+                        fprintf(stderr,"Values of blocking the fitting flags shuld only be 0 or 1.\n");
+                        exit_with_help();
+                    }
+                }
+                else {
+                    fprintf(stderr,"There should be 3 blockig the fitting flags specified.\n");
+                    exit_with_help();
+                }
+				break;
+			case 'c':
+				param.C = atof(argv[i]);
+				if(param.C < 0) {
+					fprintf(stderr,"Regularization parameter C should be above 0.\n");
+					exit_with_help();
+				}
+				if(param.C > 1000) {
+					fprintf(stderr,"Regularization parameter C is _very) high and might be impractical(%f).\n", param.C);
+				}
+				break;
+        } // end switch
+    }// end for
+    // post parse actions
+    if(!param.lo_lims_specd) { // if not specified, set to 0
+        if(param.param_lo!=NULL) free(param.param_lo);
+        param.param_lo = Calloc(NUMBER, (size_t)( param.nS*(1+param.nS+param.nO) ) );
+    }
+        
+
+    if(!param.hi_lims_specd) {
+        if(param.param_hi!=NULL) free(param.param_hi);  // if not specified, set to 1
+        param.param_hi = Calloc(NUMBER, (size_t)( param.nS*(1+param.nS+param.nO) ) );
+        for(int j=0; j<( param.nS*(1+param.nS+param.nO) ); j++)
+            param.param_hi[j] = (NUMBER)1.0;
+    }
+        
+    // post-argument checks - TODO - enable
+    if( param.cv_target_obs>(param.nO-1)) {
+        fprintf(stderr,"target observation to be cross-validated against cannot be '%d'\n",param.cv_target_obs+1);
+        exit_with_help();
+    }
+    if(param.metrics_target_obs>(param.nO-1)) {
+        fprintf(stderr,"target observation to compute metrics against cannot be '%d'\n",param.metrics_target_obs+1);
+        exit_with_help();
+    }
+    
 }
 
 bool read_and_structure_data(const char *filename) {
@@ -775,11 +833,9 @@ bool read_and_structure_data(const char *filename) {
 }
 
 void cross_validate(NUMBER* metrics, const char *filename, clock_t *tm_fit, clock_t *tm_predict) {//SEQ
-//void cross_validate(NUMBER* metrics, const char *filename, double *tm_fit, double *tm_predict) {//PAR
     NUMBER rmse = 0.0;
     NUMBER rmse_no_null = 0.0, accuracy = 0.0, accuracy_no_null = 0.0;
     clock_t tm0;//SEQ
-//    double _tm0;//PAR
     char *ch;
     NPAR f;
     NCAT g,k;
@@ -866,7 +922,7 @@ void cross_validate(NUMBER* metrics, const char *filename, clock_t *tm_fit, cloc
         // now compute
         tm0 = clock(); //SEQ
         hmms[f]->fit();
-        *(tm_fit) += (NUMBER)(clock()- tm0);//SEQ
+        *(tm_fit) += (clock_t)(clock()- tm0);//SEQ
         
         // UN-block respective data
         for(g=0; g<param.nG; g++) // for all groups
@@ -885,7 +941,6 @@ void cross_validate(NUMBER* metrics, const char *filename, clock_t *tm_fit, cloc
     param.quiet = (NPAR)q;
     
     tm0 = clock();//SEQ
-//    _tm0 = omp_get_wtime();//PAR
     // go trhough original data and predict
 	NDAT t;
 	NPAR i, j, m, o, isTarget;
@@ -992,7 +1047,7 @@ void cross_validate(NUMBER* metrics, const char *filename, clock_t *tm_fit, cloc
 	} // for all data
     rmse = sqrt( rmse / param.N );
     rmse_no_null = sqrt( rmse_no_null / (param.N - param.N_null) );
-        *(tm_predict) += (NUMBER)(clock()- tm0);//SEQ
+        *(tm_predict) += (clock_t)(clock()- tm0);//SEQ
     
     // delete problems
     NCAT n_par = 0;
@@ -1108,7 +1163,7 @@ void cross_validate_item(NUMBER* metrics, const char *filename, clock_t *tm_fit,
         // now compute
         tm0 = clock(); //SEQ
         hmms[f]->fit();
-        *(tm_fit) += (NUMBER)(clock()- tm0);//SEQ
+        *(tm_fit) += (clock_t)(clock()- tm0);//SEQ
         
         // UN-block respective data
         count_saved = 0;
@@ -1228,7 +1283,7 @@ void cross_validate_item(NUMBER* metrics, const char *filename, clock_t *tm_fit,
 	} // for all data
     rmse = sqrt( rmse / param.N );
     rmse_no_null = sqrt( rmse_no_null / (param.N - param.N_null) );
-        *(tm_predict) += (NUMBER)(clock()- tm0);//SEQ
+        *(tm_predict) += (clock_t)(clock()- tm0);//SEQ
     
     // delete problems
     NCAT n_par = 0;
@@ -1349,7 +1404,7 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename, clock_t *tm_fi
         // now compute
         tm0 = clock(); //SEQ
         hmms[f]->fit();
-        *(tm_fit) += (NUMBER)(clock()- tm0);//SEQ
+        *(tm_fit) += (clock_t)(clock()- tm0);//SEQ
         
         // UN-block respective data
         count_saved = 0;
@@ -1468,8 +1523,7 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename, clock_t *tm_fi
 	} // for all data
     rmse = sqrt( rmse / param.N );
     rmse_no_null = sqrt( rmse_no_null / (param.N - param.N_null) );
-        *(tm_predict) += (NUMBER)(clock()- tm0);//SEQ
-//    *(tm_predict) += omp_get_wtime()-_tm0;//PAR
+        *(tm_predict) += (clock_t)(clock()- tm0);//SEQ
     
     // delete problems
     NCAT n_par = 0;
