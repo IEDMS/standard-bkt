@@ -27,6 +27,9 @@
  
  */
 
+//
+//  The main executable of hte input conversion utility
+//
 
 #include "utils.h"
 #include "InputUtil.h"
@@ -108,7 +111,6 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *output_
 int main (int argc, char ** argv) {
     
 	clock_t tm0 = clock();
-    printf("starting conversion...\n");
 	char input_file[1024];
 	char output_file[1024];
     

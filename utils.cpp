@@ -308,7 +308,6 @@ void set_param_defaults(struct param *param) {
 	// configurable - set
 	param->tol                   = 0.01;
 	param->scaled                = 0;
-	param->time                  = 0;
 	param->maxiter               = 200;
 	param->quiet                 = 0;
 	param->single_skill          = 0;
@@ -375,67 +374,14 @@ void set_param_defaults(struct param *param) {
     param->block_fitting[0] = 0; // no bocking fitting for PI
     param->block_fitting[1] = 0; // no bocking fitting for A
     param->block_fitting[2] = 0; // no bocking fitting for B
-}
-
-// to reflect upon number of states and observations if those are not 2 and 2 respectively
-void reset_param_defaults(struct param *param) {
-    if(param->nS == 2 && param->nO==2)
-        return;
-    
-    // if there are more than 2 states or 2 observations
-    // set parameters to random values
-    // set limits: min=0, max=1
-    
-    int n_reduced = (param->nS + 1) * (param->nS - 1) + param->nS * (param->nO - 1);
-    
-    
-    
-    
-	param->init_params = Calloc(NUMBER, (size_t)n_reduced);
-    int pos = 0;
-    // PI
-    param->init_params[pos] = 0.5;
-    for(int i=1; i<(param->nS-1); i++) {
-        pos++;
-        param->init_params[pos] = 0.5 / (param->nS - 1);
-    }
-    // A first row
-    param->init_params[++pos] = 1;
-    for(int i=1; i<(param->nS-1); i++) {
-        pos++;
-        param->init_params[pos] = 0;
-    }
-    // A other rows
-    for(int j=1; j<(param->nS); j++) {
-        for(int i=1; i<(param->nS); i++) {
-            pos++;
-            param->init_params[pos] = 0.4 / ((param->nS - 1) * (param->nS - 1));
-        }
-    }
-    
-    // B first row
-    param-> init_params[++pos] = 0.8;
-    for(int m=1; m<(param->nO-1); m++) {
-        pos++;
-        param->init_params[pos] = 0.2 / (param->nO - 1);
-    }
-    // B other rows
-    for(int j=1; j<(param->nS); j++) {
-        for(int m=1; m<(param->nO); m++) {
-            pos++;
-            param->init_params[pos] = 0.2 / ((param->nS - 1) * (param->nO - 1));
-        }
-    }
-    
-    int n = (param->nS + 1) * param->nS + param->nS * param->nO;
-	param->param_lo = Calloc(NUMBER, (size_t)n);
-	param->param_hi = Calloc(NUMBER, (size_t)n);
-    for(int i=0; i<n; i++) param->param_hi[i] = 1;
-    // lower not forgetting = 1
-    param->param_lo[param->nS] = 1;
-    // upper forgetting's = 0
-    for(int i=(param->nS+1); i<2*param->nS; i++)
-        param->param_hi[i] = 0;
+    // data
+    param->dat_obs = NULL;
+    param->dat_group = NULL;
+    param->dat_skill = NULL;
+    param->dat_skill_stacked = NULL;
+    param->dat_skill_rcount = NULL;
+    param->dat_skill_rix = NULL;
+    param->dat_item = NULL;
 }
 
 void destroy_input_data(struct param *param) {
@@ -449,14 +395,13 @@ void destroy_input_data(struct param *param) {
 	if(param->dat_group != NULL) free( param->dat_group );
 	if(param->dat_item != NULL) free( param->dat_item );
 	if(param->dat_skill != NULL) free( param->dat_skill );
-	if(param->dat_multiskill != NULL) delete param->dat_multiskill;
-	if(param->dat_time != NULL) free( param->dat_time );
+    if(param->dat_skill_stacked != NULL) free( param->dat_skill_stacked );
+    if(param->dat_skill_rcount != NULL) free( param->dat_skill_rcount );
+    if(param->dat_skill_rix != NULL) free( param->dat_skill_rix );
     
     // not null skills
     for(NDAT kg=0;kg<param->nSeq; kg++) {
         free(param->all_data[kg].ix); // was obs;
-        if(param->time)
-            free(param->all_data[kg].time);
     }
     if(param->all_data != NULL) free(param->all_data); // ndat of them
     if(param->k_data != NULL)   free(param->k_data); // ndat of them (reordered by k)
@@ -498,6 +443,8 @@ void writeSolverInfo(FILE *fid, struct param *param) {
     fprintf(fid,"nS\t%d\n",param->nS);
     // nO
     fprintf(fid,"nO\t%d\n",param->nO);
+    // nZ
+    fprintf(fid,"nZ\t%d\n",param->nZ);
 }
 
 void readSolverInfo(FILE *fid, struct param *param, NDAT *line_no) {
@@ -525,6 +472,9 @@ void readSolverInfo(FILE *fid, struct param *param, NDAT *line_no) {
     (*line_no)++;
     // nO
     fscanf(fid,"nO\t%hhu\n",&param->nO);
+    (*line_no)++;
+    // nZ
+    fscanf(fid,"nZ\t%hhu\n",&param->nZ);
     (*line_no)++;
 }
 

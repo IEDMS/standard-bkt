@@ -29,8 +29,8 @@
 
 //
 //  InputUtil.h
-//  This class is a utility that reads input text for HMM, converts it
-//  to a more compact binary file, and reads the binary file too
+//  This is a support class that helps read input text for HMM, convert it
+//  to a more compact binary file, and read the binary file as well
 //  HMM
 
 #ifndef __HMM__InputUtil__
@@ -39,8 +39,8 @@
 #include "utils.h"
 
 //#define bin_input_file_verstion 1
-#define bin_input_file_verstion 2 // increase number of skills/students to a 4 byte integer
-
+//#define bin_input_file_verstion 2 // increase number of skills/students to a 4 byte integer
+#define bin_input_file_verstion 3 // added Nstacked, changed how multi-skills are stored
 class InputUtil {
 public:
     static bool readTxt(const char *fn, struct param * param); // read txt into param
@@ -49,7 +49,5 @@ public:
 private:
     static void writeString(FILE *f, string str);
     static string readString(FILE *f);
-    static NDAT writeMultiSkill(FILE *f, struct param * param);
-    static NDAT  readMultiSkill(FILE *f, struct param * param, char version);
 };
 #endif /* defined(__HMM__InputUtil__) */

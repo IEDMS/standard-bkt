@@ -93,6 +93,9 @@ int main (int argc, char ** argv) {
 //    else
 //        readSolverInfo(fid, &initparam, &line_no);
     
+    // copy partial info from param_model to param
+    if(param.nO==0) param.nO = param_model.nO;
+
     // read model body
     HMMProblem * hmm = new HMMProblem(&param);
     hmm->readModelBody(fid, &param_model, &line_no, overwrite);
@@ -106,7 +109,8 @@ int main (int argc, char ** argv) {
 //    if(param.metrics>0 || param.predictions>0) {
         metrics = Calloc(NUMBER, (size_t)7);// LL, AIC, BIC, RMSE, RMSEnonull, Acc, Acc_nonull;
 //    }
-    hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_multiskill, false/*only unlabelled*/);
+
+    hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_skill_stacked, param.dat_skill_rcount, param.dat_skill_rix, false/*all, not only unlabelled*/);
 //    predict(predict_file, hmm);
 	if(param.quiet == 0)
 		printf("predicting is done in %8.6f seconds\n",(NUMBER)(clock()-tm)/CLOCKS_PER_SEC);

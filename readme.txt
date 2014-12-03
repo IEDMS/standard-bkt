@@ -36,8 +36,8 @@ forgetting is captured by setting A[1,2] = 0 (from mastered to unmastered).
 pLearn corresponds to A[2,1] - from unmastered to mastered. pGuess and pSlip are
 specified in B -- observation matrix N*M, where M is the number of observations.
 First column corresponds to correct observation, second -- incorrect. For two
-onservations, typical for BKT, pGuess is B[2,1] -- mastered skill but a correct
-response, and pSlip is B[1,2] - mastered skill but incorrect response.
+onservations, typical for BKT, pGuess is B[2,1] -- unmastered skill but a
+correct response, and pSlip is B[1,2] - mastered skill but incorrect response.
 
 \pi .-------------------.
     |   pLo   | 1 - pLo |
@@ -56,7 +56,7 @@ B   .-------------------.
     .-------------------.
 
 For more details on BKT refer to [1]. [2], among other things, discusses how
-a gradient-based fitting of HMM can be implemented. [3, 4] covers additional
+a gradient-based fitting of HMM can be implemented. [3, 4] cover additional
 topics relevant for the implementation.
 
 = Compilation =
@@ -162,11 +162,12 @@ options:
      For example '-m 0', '-m 1' (by default, observation 1 is assumed), '-m 1,2'
      (compute metrics for observation 2). Incompatible with '-v' option.
 -v : cross-validation folds, stratification, and target state to validate
-     against, default 0 (no cross-validation),
+     against, folds input/output file, default 0 (no cross-validation),
      examples '-v 5,i,2' - 5 fold, item-stratified c.-v., predict state 2,
      '-v 10' - 10-fold subject-stratified c.-v. predict state 1 by default,
-     alternatively '-v 10,g,1', and finally '-v 5,n,2,' - 5-fold unstratified
-     c.-v. predicting state 1.
+     alternatively '-v 10,g,1', '-v 5,n,2,folds.txt,o' - 5-fold unstratified
+     c.-v. predicting state 2, [o]output folds to 'folds.txt', and here 
+     '-v 5,n,2,folds.txt,i', folds are actually read [i]n from the file.
 -p : report model predictions on the train set 0-no (default), 1-yes; 2-yes,
      plus output state probability; works with -v and -m parameters.
 -d : delimiter for multiple skills per observation; 0-single skill per
@@ -194,7 +195,7 @@ options:
 -b : treat input file as binary input file  created from text file by
      inputconvert utility.
 -p : report model predictions on the train set 0-no (default), 1-yes; 2-yes,
-     plus output state probability; works with -v and -m parameters.
+plus output state probability; works with -v and -m parameters.
 
 = Examples =
 
@@ -217,7 +218,7 @@ Loglikelihood changes from  9.3763477 to 6.4099682 after 11 iterations.
 
 To generate predictions using a previously fit model run the following command 
 (do not forget that prediction will only be generated for rows where observation
-is now known -- marked with '.'):
+is not known -- marked with '.'):
 
 sh> ./predicthmm -p 1 toy_data_test.txt model.txt predict.txt
 
@@ -230,18 +231,15 @@ Algebra I set that has about 9 million transactions of over 3300 students. The
 training file should be trimmed to the tool's format. See shell commands below
 that do that.
 
-sh> gawk '-F\t' 'BEGIN{OFS=""} {print ".","\t",$2,"\t",$3,"__",$4,"\t",tolower($20)}' algebra_2008_2009_train.txt > tmp1.txt
-sh> sed 1d tmp1.txt
-sh> rm tmp1.txt
-sh> awk '-F\t' 'BEGIN{OFS=""} {print $1,"\t",$2,"\t",$3,"\t",((length($4)==0)?".":$4)}' tmp2.txt > a89_kts_train.txt
-sh> rm tmp2.txt
+sh> gawk '-F\t' 'BEGIN{OFS=""} {skill=tolower($20); sub(/~~/, "~", skill); skill=(skill=="")?".":skill; print 2-$14,"\t",$2,"\t",$3,"__",$4,"\t",skill}' algebra_2008_2009_train.txt > a89_kts_train.txt
+sh> sed -i '' 1d a89_kts_train.txt
 
 To fit a BKT model of this dataset using gradient descent method as well as to 
 compute fit metrics and the prediction run the following command:
 
-sh> ./trainhmm -s 1.2 -m 1 -p 1 a89_kts_train.txt model.txt predict.txt
+sh> ./trainhmm -s 1.2 -d ~ -m 1 -p 1 a89_kts_train.txt model.txt predict.txt
 
-Depending on your hardware, the model should be fit in approximately 2 minutes.
+Depending on your hardware, the model should be fit in about 1-2 minutes.
 
 = References =
 

@@ -27,7 +27,9 @@
  
  */
 
-// helper functions as well as for some common functionality
+/*
+ *  this header file is for helper functions as well as for some common functionality
+ */
 
 #include <map>
 #include <string>
@@ -88,7 +90,8 @@ enum METHOD {
     METHOD_BW   = 1,  // 1 - Baum Welch (expectation maximization)
     METHOD_GD   = 2,  // 2 - Gradient Descent
     METHOD_CGD  = 3,  // 3 - Conjugate Gradient Descent
-    METHOD_GDL  = 4   // 4 - Gradient Descent with Lagrange step
+    METHOD_GDL  = 4,  // 4 - Gradient Descent with Lagrange step
+    METHOD_GBB  = 5   // 6 - Barzilai Borwein Gradient Method
 };
 
 enum CROSS_VALIDATION {
@@ -119,13 +122,13 @@ struct data {
 	NDAT cnt;  // help counter, used for building the data and "banning" data from being fit when cross-valudating based on group
     //	NPAR *obs; // onservations array - will become the pointer array to the big data
     NDAT *ix; // these are 'ndat' indices to the through arrays (e.g. param.dat_obs and param.dat_item)
+    NDAT *ix_stacked; // these are 'ndat' indices to the stacked version through arrays (for example the case of multi-skills per row)
 	NUMBER *c; // nS  - scaling factor vector
-    int *time;
 	NUMBER **alpha; // ndat x nS
 	NUMBER **beta;  // ndat x nS
 	NUMBER **gamma; // ndat x nS
 	NUMBER ***xi; // ndat x nS x nS
-	NUMBER p_O_param; // 
+	NUMBER p_O_param; // likelihood of the observations under parameters
     NUMBER loglik; // loglikelihood
 	NCAT k,g; // pointers to skill (k) and group (g)
 };
@@ -140,14 +143,13 @@ struct param {
 	NUMBER *param_hi;
 	NUMBER tol;  // tolerance of termination criterion (0.0001 by default)
     NPAR scaled;
-    NPAR time; // 1-read time data from 5th column as milliseconds since epoch (0-default)
 	int maxiter; // maximum iterations (200 by default)
 	NPAR quiet;   // quiet mode (no outputs)
 	NPAR single_skill; // 0 - do nothing, 1 - fit all skills as skingle skill, to set a starting point, 2 - enforce fit single skill
 	NPAR structure; // whether to fit by skill, by group, or mixture of them
 	NPAR solver; // whether to first fit all skills as skingle skill, to set a starting point
 	NPAR solver_setting; // to be used by individual solver
-	NUMBER C;// weight of the L1 norm penalty
+	NUMBER C;// weight of the L2 norm penalty
 	int metrics;   // compute AIC, BIC, RMSE of training
 	int metrics_target_obs;   // target observation for RMSE of training
     int predictions; // report predictions on training data
@@ -162,16 +164,20 @@ struct param {
     NPAR* dat_obs;
     NCAT* dat_group;
     NCAT *dat_skill;
+    NCAT *dat_skill_stacked; // if multiskill==1, stacked array of all multiskills
+    NCAT *dat_skill_rcount;  // if multiskill==1, for each multi-skill row count of skills in it
+    NDAT *dat_skill_rix;     // if multiskill==1, for each data skill row, index into first element in stacked array
     NCAT *dat_item;
-    StripedArray< NCAT* > *dat_multiskill;
-    int *dat_time;
+    NPAR *dat_slice;         // slices - alternative slots of A, B matrices
 	// derived from data
     NDAT   N;       // number of ALL data rows
+    NDAT   Nstacked;// number of ALL data rows, if multiple skills per row are expanded
 	NPAR  nS;		// number of states
 	NPAR  nO;		// number of unique observations
 	NCAT  nG;       // number of subjects (sequences, groups)
-	NCAT  nK;		// number of skills (subproblems)
-	NCAT nI;		// number of items (problems)
+    NCAT  nK;		// number of skills (subproblems)
+	NCAT  nI;		// number of items (problems)
+    NPAR  nZ;		// number of slices
     // null-skill data by student
     NDAT N_null; // total number of null skill instances
     struct data *null_skills;
@@ -241,15 +247,19 @@ template<typename T> void toZero2D(T** ar, NDAT size1, NDAT size2) {
 }
 
 template<typename T> void toZero3D(T*** ar, NDAT size1, NDAT size2, NDAT size3) {
-	for(NDAT i=0; i<size1; i++)
+    for(NDAT i=0; i<size1; i++)
         for(NDAT j=0; j<size2; j++)
             for(NDAT l=0; l<size3; l++)
                 ar[i][j][l] = 0;
 }
-//void toZero1DNumber(NUMBER *ar, NDAT size);
-//void toZero2DNumber(NUMBER **ar, NDAT size1, NPAR size2);
-//void toZero3DNumber(NUMBER ***ar, NDAT size1, NPAR size2, NPAR size3);
 
+template<typename T> void toZero4D(T**** ar, NDAT size1, NDAT size2, NDAT size3, NDAT size4) {
+    for(NDAT i=0; i<size1; i++)
+        for(NDAT j=0; j<size2; j++)
+            for(NDAT l=0; l<size3; l++)
+                for(NDAT n=0; n<size4; n++)
+                    ar[i][j][l][n] = 0;
+}
 
 template<typename T> T* init1D(NDAT size) {
     T* ar = Calloc(T, (size_t)size);
@@ -274,6 +284,21 @@ template<typename T> T*** init3D(NDAT size1, NDAT size2, NDAT size3) {
 	return ar;
 }
 
+template<typename T> T**** init4D(NDAT size1, NDAT size2, NDAT size3, NDAT size4) {
+    NDAT i,j, l;
+    T**** ar = Calloc(T ***, (size_t)size1);
+    for(i=0; i<size1; i++) {
+        ar[i] = Calloc(T**, (size_t)size2);
+        for(j=0; j<size2; j++) {
+            ar[i][j] = Calloc(T*, (size_t)size3);
+            for(l=0; l<size3; l++)
+                ar[i][j][l] = Calloc(T, (size_t)size4);
+        }
+    }
+    return ar;
+}
+
+
 template<typename T> void free2D(T** ar, NDAT size1) {
 	for(NDAT i=0; i<size1; i++)
 		free(ar[i]);
@@ -282,14 +307,28 @@ template<typename T> void free2D(T** ar, NDAT size1) {
 }
 
 template<typename T> void free3D(T*** ar, NDAT size1, NDAT size2) {
-	for(NDAT i=0; i<size1; i++) {
-		for(NDAT j=0; j<size2; j++)
-			free(ar[i][j]);
-		free(ar[i]);
-	}
-	free(ar);
+    for(NDAT i=0; i<size1; i++) {
+        for(NDAT j=0; j<size2; j++)
+            free(ar[i][j]);
+        free(ar[i]);
+    }
+    free(ar);
     //    &ar = NULL;
 }
+
+template<typename T> void free4D(T**** ar, NDAT size1, NDAT size2, NDAT size3) {
+    for(NDAT i=0; i<size1; i++) {
+        for(NDAT j=0; j<size2; j++) {
+            for(NDAT l=0; l<size3; l++)
+                free(ar[i][j][l]);
+            free(ar[i][j]);
+        }
+        free(ar[i]);
+    }
+    free(ar);
+    //    &ar = NULL;
+}
+
 
 template<typename T> void cpy1D(T* source, T* target, NDAT size) {
     memcpy( target, source, sizeof(T)*(size_t)size );
@@ -299,10 +338,17 @@ template<typename T> void cpy2D(T** source, T** target, NDAT size1, NDAT size2) 
 		memcpy( target[i], source[i], sizeof(T)*(size_t)size2 );
 }
 template<typename T> void cpy3D(T*** source, T*** target, NDAT size1, NDAT size2, NDAT size3) {
-	for(NDAT t=0; t<size1; t++)
+    for(NDAT t=0; t<size1; t++)
         for(NDAT i=0; i<size2; i++)
             memcpy( target[t][i], source[t][i], sizeof(T)*(size_t)size3 );
 }
+template<typename T> void cpy4D(T**** source, T**** target, NDAT size1, NDAT size2, NDAT size3, NDAT size4) {
+    for(NDAT t=0; t<size1; t++)
+        for(NDAT i=0; i<size2; i++)
+            for(NDAT j=0; j<size3; j++)
+                memcpy( target[t][i][j], source[t][i][j], sizeof(T)*(size_t)size4 );
+}
+
 
 template<typename T> void swap1D(T* source, T* target, NDAT size) {
     T* buffer = init1D<T>(size); // init1<NUMBER>(size);
@@ -325,6 +371,13 @@ template<typename T> void swap3D(T*** source, T*** target, NDAT size1, NDAT size
     cpy3D<T>(source, buffer, size1, size2, size3);
     free3D<T>(buffer, size1, size2);
 }
+template<typename T> void swap4D(T**** source, T**** target, NDAT size1, NDAT size2, NDAT size3, NDAT size4) {
+    T**** buffer = init4D<T>(size1, size2, size3, size4);
+    cpy4D<T>(buffer, target, size1, size2, size3, size4);
+    cpy4D<T>(target, source, size1, size2, size3, size4);
+    cpy4D<T>(source, buffer, size1, size2, size3, size4);
+    free4D<T>(buffer, size1, size2, size3);
+}
 
 NUMBER safe01num(NUMBER val); // convert number to a safe [0, 1] range
 NUMBER safe0num(NUMBER val); // convert number to a safe (0, inf) or (-inf, 0) range
@@ -333,11 +386,14 @@ NUMBER safelog(NUMBER val); // safe log for prediction
 void add1DNumbersWeighted(NUMBER* sourse, NUMBER* target, NPAR size, NUMBER weight);
 
 void add2DNumbersWeighted(NUMBER** sourse, NUMBER** target, NPAR size1, NPAR size2, NUMBER weight);
+void add3DNumbersWeighted(NUMBER*** sourse, NUMBER*** target, NPAR size1, NPAR size2, NPAR size3, NUMBER weight);
 
 // scaling params for HMM
 bool isPasses(NUMBER* ar, NPAR size);
 bool isPassesLim(NUMBER* ar, NPAR size, NUMBER* lb, NUMBER *ub);
 
+NUMBER doLog10Scale1D(NUMBER *ar, NPAR size);
+NUMBER doLog10Scale2D(NUMBER **ar, NPAR size1, NPAR size2);
 NUMBER doLog10Scale1DGentle(NUMBER *grad, NUMBER *par, NPAR size);
 NUMBER doLog10Scale2DGentle(NUMBER **grad, NUMBER **par, NPAR size1, NPAR size2);
 

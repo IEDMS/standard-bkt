@@ -27,8 +27,10 @@
  
  */
 
-// StripedArray is an array that grows in chunks, just to save time and not do
-// one extra linear scon of the data
+/*
+ * helper auto-expanded array without re-allocating the memory, by allocating 
+ * chunks - stripes
+ */
 
 #include <limits.h>
 #include <stdlib.h>

@@ -132,8 +132,10 @@ int main (int argc, char ** argv) {
             // takes care of predictions and metrics, writes predictions if param.predictions==1
             
             tm_predict = clock(); //SEQ
-            hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_multiskill, false/*all, not only unlabelled*/);
+            hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_skill_stacked, param.dat_skill_rcount, param.dat_skill_rix, false/*all, not only unlabelled*/);
+            
             tm_predict = clock()-tm_predict;//SEQ
+//            _tm_predict = omp_get_wtime()-_tm_predict;//PAR
             
             if( param.metrics>0 /*&& !param.quiet*/) {
                 printf("trained model LL=%15.7f (%15.7f), AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f)\n",
@@ -228,6 +230,7 @@ void parse_arguments_step1(int argc, char **argv, char *input_file_name, char *o
     
     // at this time we do not know nO (the number of observations) yet
 	int i;
+    int n;
     char *ch, *ch2;
 	for(i=1;i<argc;i++)
 	{
@@ -244,13 +247,6 @@ void parse_arguments_step1(int argc, char **argv, char *input_file_name, char *o
 				}
 				if(param.tol>10) {
 					fprintf(stderr,"ERROR! Fitting tolerance cannot be >10\n");
-					exit_with_help();
-				}
-				break;
-			case 't':
-				param.time = (NPAR)atoi(argv[i]);
-				if(param.time!=0 && param.time!=1) {
-					fprintf(stderr,"ERROR! Time parameter should be either 0 (off) or 1(om)\n");
 					exit_with_help();
 				}
 				break;
@@ -298,7 +294,8 @@ void parse_arguments_step1(int argc, char **argv, char *input_file_name, char *o
 					exit_with_help();
                 }
                 if( param.solver != METHOD_BW  && param.solver != METHOD_GD &&
-                   param.solver != METHOD_CGD && param.solver != METHOD_GDL) {
+                   param.solver != METHOD_CGD && param.solver != METHOD_GDL &&
+                   param.solver != METHOD_GBB) {
                     fprintf(stderr, "Method specified (%d) is out of range of allowed values\n",param.solver);
 					exit_with_help();
                 }
@@ -587,7 +584,7 @@ bool read_and_structure_data(const char *filename) {
 	//			k_numg[nK]        - number of groups per skill                 RETAIN
 	
 	NDAT t = 0;
-    int tm = 0; // time
+    NDAT t_stacked = 0;
 	NCAT g, k;
 //	NPAR o;
 	NPAR **skill_group_map = init2D<NPAR>(param.nK, param.nG); // binary map of skills to groups
@@ -601,8 +598,9 @@ bool read_and_structure_data(const char *filename) {
         if(param.multiskill==0)
             k = param.dat_skill[t];//[t];
         else
-            k = param.dat_multiskill->get(t)[1]; // #0 is count, #1 is first element
-		g = param.dat_group[t];//[t];
+            k = param.dat_skill_stacked[ param.dat_skill_rix[t] ]; // first skill of multi-skill
+
+        g = param.dat_group[t];//[t];
 		// null skill : just count
 		if( k < 0 ) {
             if(count_null_skill_group[g]==0) param.n_null_skill_group++;
@@ -616,8 +614,9 @@ bool read_and_structure_data(const char *filename) {
             ar = &k;
             n = 1;
         } else {
-            ar = &param.dat_multiskill->get(t)[1];
-            n = param.dat_multiskill->get(t)[0];
+            k = param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            ar = &param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            n = param.dat_skill_rcount[t];
         }
         for(int l=0; l<n; l++) {
             k = ar[l];
@@ -671,8 +670,9 @@ bool read_and_structure_data(const char *filename) {
             ar = &k;
             n = 1;
         } else {
-            ar = &param.dat_multiskill->get(t)[1];
-            n = param.dat_multiskill->get(t)[0];
+            k = param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            ar = &param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            n = param.dat_skill_rcount[t];
         }
         for(int l=0; l<n; l++) {
             k = ar[l];
@@ -695,7 +695,6 @@ bool read_and_structure_data(const char *filename) {
                 param.null_skills[gidx].gamma = NULL;
                 param.null_skills[gidx].xi = NULL;
                 param.null_skills[gidx].c = NULL;
-                param.null_skills[gidx].time = NULL;
                 param.null_skills[gidx].p_O_param = 0.0;
                 continue;
             }
@@ -726,6 +725,7 @@ bool read_and_structure_data(const char *filename) {
                 param.all_data[n_all_data].cnt = 0;
                 //                param.all_data[n_all_data].obs = NULL;
                 param.all_data[n_all_data].ix = NULL;
+                param.all_data[n_all_data].ix_stacked = NULL;
                 param.all_data[n_all_data].alpha = NULL;
                 param.all_data[n_all_data].beta = NULL;
                 param.all_data[n_all_data].gamma = NULL;
@@ -763,9 +763,6 @@ bool read_and_structure_data(const char *filename) {
 	g_countk = Calloc(NDAT, (size_t)param.nG); // track current skill in group
 	for(t=0; t<param.N; t++) {
 		g = param.dat_group[t];
-//		o = param.dat_obs->get(t);
-        if(param.time)
-            tm = param.dat_time[t];
         NCAT *ar;
         int n;
         if(param.multiskill==0) {
@@ -773,8 +770,9 @@ bool read_and_structure_data(const char *filename) {
             ar = &k;
             n = 1;
         } else {
-            ar = &param.dat_multiskill->get(t)[1];
-            n = param.dat_multiskill->get(t)[0];
+            k = param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            ar = &param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            n = param.dat_skill_rcount[t];
         }
         for(int l=0; l<n; l++) {
             k = ar[l];
@@ -790,11 +788,11 @@ bool read_and_structure_data(const char *filename) {
                 //                param.k_g_data[k][ k_countg[k] ]->obs = Calloc(NPAR, (size_t)param.k_g_data[k][ k_countg[k] ]->n); // grab
                 //                param.k_g_data[k][ k_countg[k] ]->obs[0] = o; // insert
                 param.k_g_data[k][ k_countg[k] ]->ix = Calloc(NDAT, (size_t)param.k_g_data[k][ k_countg[k] ]->n); // grab
-                if(param.time)
-                    param.k_g_data[k][ k_countg[k] ]->time = Calloc(int, (size_t)param.k_g_data[k][ k_countg[k] ]->n); // grab
                 param.k_g_data[k][ k_countg[k] ]->ix[0] = t; // insert
-                if(param.time)
-                    param.k_g_data[k][ k_countg[k] ]->time[0] = tm; // insert
+                if(param.multiskill==1) {
+                    param.k_g_data[k][ k_countg[k] ]->ix_stacked = Calloc(NDAT, (size_t)param.k_g_data[k][ k_countg[k] ]->n); // grab
+                    param.k_g_data[k][ k_countg[k] ]->ix_stacked[0] = t_stacked; // first stacked index
+                }
                 param.k_g_data[k][ k_countg[k] ]->cnt++; // increase data counter
                 k_countg[k]++; // count unique groups forward
                 g_countk[g]++; // count unique skills forward
@@ -808,15 +806,16 @@ bool read_and_structure_data(const char *filename) {
                     NDAT pos = param.k_g_data[k][ gidx ]->cnt; // copy position
                     //                    param.k_g_data[k][ gidx ]->obs[pos] = o; // insert
                     param.k_g_data[k][ gidx ]->ix[pos] = t; // insert
-                    if(param.time)
-                        param.k_g_data[k][ gidx ]->time[pos] = tm; // insert
+                    if(param.multiskill==1)
+                        param.k_g_data[k][ gidx ]->ix_stacked[pos] = t_stacked; // insert
                     param.k_g_data[k][ gidx ]->cnt++; // increase data counter
                 }
                 else
                     printf("ERROR! position of group %d in skill %d not found\n",g,k);
             }
-        }
-    }
+            t_stacked++;
+        }// all skills on the row
+    } // all t
 	// recycle
 	free(k_countg);
 	free(g_countk);
@@ -948,7 +947,6 @@ void cross_validate(NUMBER* metrics, const char *filename, clock_t *tm_fit, cloc
 	NUMBER pLe[param.nS];// p(L|evidence);
 	NUMBER pLe_denom; // p(L|evidence) denominator
 	NUMBER ***group_skill_map = init3D<NUMBER>(param.nG, param.nK, param.nS); // knowledge states //UNBOOST
-//   ::boost::numeric::ublas::mapped_matrix<NUMBER*> gsm (param.nG, param.nK);//BOOST
     NUMBER prob = 0, ll = 0;
     struct data dt;
 
@@ -967,8 +965,9 @@ void cross_validate(NUMBER* metrics, const char *filename, clock_t *tm_fit, cloc
             ar = &k;
             n = 1;
         } else {
-            ar = &param.dat_multiskill->get(t)[1];
-            n = param.dat_multiskill->get(t)[0];
+            k = param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            ar = &param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            n = param.dat_skill_rcount[t];
         }
         if(ar[0]<0) { // if no skill label
             rmse += pow(isTarget-hmms[f]->getNullSkillObs(param.cv_target_obs),2);
@@ -1204,8 +1203,9 @@ void cross_validate_item(NUMBER* metrics, const char *filename, clock_t *tm_fit,
             ar = &k;
             n = 1;
         } else {
-            ar = &param.dat_multiskill->get(t)[1];
-            n = param.dat_multiskill->get(t)[0];
+            k = param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            ar = &param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            n = param.dat_skill_rcount[t];
         }
         if(ar[0]<0) { // if no skill label
             rmse += pow(isTarget-hmms[f]->getNullSkillObs(param.cv_target_obs),2);
@@ -1443,8 +1443,9 @@ void cross_validate_nstrat(NUMBER* metrics, const char *filename, clock_t *tm_fi
             ar = &k;
             n = 1;
         } else {
-            ar = &param.dat_multiskill->get(t)[1];
-            n = param.dat_multiskill->get(t)[0];
+            k = param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            ar = &param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            n = param.dat_skill_rcount[t];
         }
         if(ar[0]<0) { // if no skill label
             rmse += pow(isTarget-hmms[f]->getNullSkillObs(param.cv_target_obs),2);

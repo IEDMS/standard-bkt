@@ -1,10 +1,10 @@
-CXX ?= $(CXX) $(CFLAGS)
+CC=g++ #
+CXX=g++ #
 CFLAGS = -Wall -Wconversion -O3 -fPIC
 SHVER = 1
 OS = $(shell uname)
 
-all: train predict input
-
+all: train predict input tidy
 
 train: utils.o StripedArray.o FitBit.o HMMProblem.o InputUtil.o trainhmm.cpp
 	$(CXX) $(CFLAGS) -o trainhmm trainhmm.cpp utils.o FitBit.o InputUtil.o HMMProblem.o StripedArray.o 
@@ -32,3 +32,6 @@ HMMProblem.o: HMMProblem.cpp HMMProblem.h
 
 clean:
 	rm -f *.o trainhmm predicthmm inputconvert
+
+tidy:
+	rm -f *.o
