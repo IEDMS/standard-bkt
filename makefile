@@ -28,7 +28,7 @@ FitBit.o: FitBit.cpp FitBit.h
 	$(CXX) $(CFLAGS) -c -o FitBit.o FitBit.cpp
 
 HMMProblem.o: HMMProblem.cpp HMMProblem.h
-	$(CXX) $(CFLAGS) -c -o 	HMMProblem.o HMMProblem.cpp 
+	$(CXX) $(CFLAGS) -c -o	HMMProblem.o HMMProblem.cpp 
 
 clean:
 	rm -f *.o trainhmm predicthmm inputconvert

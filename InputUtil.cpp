@@ -33,6 +33,12 @@
 #include <map>
 #include <list>
 
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <iostream>
+
+
 static int max_line_length;
 static char * line;
 
@@ -148,6 +154,7 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 		striped_dat_obs->add(obs); // dat_obs[t] = (NPAR)obs;
 		if( (obs >= 0) && ((param->nO-1) < obs) )
 			param->nO = (NPAR)(obs + 1); // obs[t] + 1;
+
 		// Group
 		col = strtok(NULL,"\t\n\r");
 		if(col == NULL) {
@@ -321,7 +328,6 @@ bool InputUtil::readBin(const char *fn, struct param * param) {
     NDAT i;
     NDAT nread;
     FILE *fid = fopen(fn,"rb");
-    NDAT t;
     
     // version
     nread = (NDAT)fread (&v, sizeof(char), (size_t)1, fid);
@@ -396,7 +402,7 @@ bool InputUtil::readBin(const char *fn, struct param * param) {
         fprintf(stderr,"Error reading number of slices from %s\n",fn);
         return false;
     }
-    param->nZ = (NCAT)i;
+    param->nZ = (NPAR)i;
     if(param->nZ<1) {
         fprintf(stderr,"Number of slices should be at least 1\n");
         return true;

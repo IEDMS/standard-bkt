@@ -42,7 +42,7 @@
 		715BD82117B0118000C9B6D3 /* toy_data_test.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = toy_data_test.txt; sourceTree = "<group>"; };
 		71A39C9F179DAAC6000F9610 /* inputconvert.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = inputconvert.cpp; sourceTree = "<group>"; };
 		71A39CA9179DB04F000F9610 /* inputconvert */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = inputconvert; sourceTree = BUILT_PRODUCTS_DIR; };
-		71AF7DF4176F6C3F000C7E96 /* trainhmmOld */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = trainhmmOld; path = trainhmm; sourceTree = BUILT_PRODUCTS_DIR; };
+		71AF7DF4176F6C3F000C7E96 /* trainhmm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = trainhmm; sourceTree = BUILT_PRODUCTS_DIR; };
 		71B056FD17A29AAC007D146C /* readme.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = readme.txt; sourceTree = "<group>"; };
 		71D234A417540A7C006985EB /* HMMProblem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblem.cpp; sourceTree = "<group>"; };
 		71D234A617540A80006985EB /* HMMProblem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblem.h; sourceTree = "<group>"; };
@@ -123,7 +123,7 @@
 			isa = PBXGroup;
 			children = (
 				EB32E9F4157FA159002F3FFB /* predicthmm */,
-				71AF7DF4176F6C3F000C7E96 /* trainhmmOld */,
+				71AF7DF4176F6C3F000C7E96 /* trainhmm */,
 				71A39CA9179DB04F000F9610 /* inputconvert */,
 			);
 			name = Products;
@@ -169,7 +169,7 @@
 			);
 			name = trainhmm;
 			productName = trainhmmOld;
-			productReference = 71AF7DF4176F6C3F000C7E96 /* trainhmmOld */;
+			productReference = 71AF7DF4176F6C3F000C7E96 /* trainhmm */;
 			productType = "com.apple.product-type.tool";
 		};
 		EB32E9F3157FA159002F3FFB /* predicthmm */ = {
