@@ -1,1 +1,7 @@
 *.xcodeproj
+boost/**/*
+DerivedData/**/*
+inputconvert
+trainhmm
+predicthmm
+papers/*
