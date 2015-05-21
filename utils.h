@@ -1,6 +1,6 @@
 /*
  
- Copyright (c) 2012-2014, Michael (Mikhail) Yudelson
+ Copyright (c) 2012-2015, Michael (Mikhail) Yudelson
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -70,21 +70,6 @@ typedef signed int NDAT;  // number of data rows, now 4 bill max
 typedef double NUMBER;    // numeric float format
 const NUMBER pi = 3.141592653589793;
 
-//enum SOLVER { // deprecating
-//    BKT_NULL     =  0, // 0 unassigned
-//    BKT_CGD      =  1, // 1 - Conjugate Gradient Descent by skill
-//    BKT_GD       =  2, // 2 - Gradient Descent by skill
-//    BKT_BW       =  3, // 3 - Baum Welch  by skill
-//    BKT_GD_BW    =  4, // 4 - Gradient Descent then Expectation Maximization (Baum-Welch) by skill
-//    BKT_BW_GD    =  5, // 5 - Expectation Maximization (Baum-Welch) then Gradient Descent by skill
-//    BKT_GD_G     =  6, // 6 - Gradient Descent by group
-//    BKT_GD_PIg   =  7, // 7 - Gradient Descent: PI by group, A,B by skill
-//    BKT_GD_PIgk  =  8, // 8 - Gradient Descent, PI=logit(skill,group), other by skill
-//    BKT_GD_APIgk =  9, // 9 - Gradient Descent, PI=logit(skill,group), A=logit(skill,group), B by skill
-//    BKT_GD_Agk   = 10, //10 - Gradient Descent, A=logit(skill,group), PI,B by skill
-//    BKT_GD_T     = 11  //11 - Gradient Descent by skill with transfer matrix
-//};
-
 // Fitting method
 enum METHOD {
     METHOD_BW   = 1,  // 1 - Baum Welch (expectation maximization)
@@ -143,13 +128,16 @@ struct param {
 	NUMBER *param_hi;
 	NUMBER tol;  // tolerance of termination criterion (0.0001 by default)
     NPAR scaled;
+    NPAR do_not_check_constraints;
 	int maxiter; // maximum iterations (200 by default)
 	NPAR quiet;   // quiet mode (no outputs)
 	NPAR single_skill; // 0 - do nothing, 1 - fit all skills as skingle skill, to set a starting point, 2 - enforce fit single skill
 	NPAR structure; // whether to fit by skill, by group, or mixture of them
 	NPAR solver; // whether to first fit all skills as skingle skill, to set a starting point
 	NPAR solver_setting; // to be used by individual solver
-	NUMBER C;// weight of the L2 norm penalty
+    NPAR Cslices; // 0 - do not use L2 norm penalty, >0 - number of "slices" (e.g. 1 - for by skill, 2 - for by skill and by group/user)
+    NUMBER* Cw;// weight of the L2 norm penalty, for skill or group parameters (or however many there might be)
+    NUMBER* Ccenters;// center values for L2 penalties
 	int metrics;   // compute AIC, BIC, RMSE of training
 	int metrics_target_obs;   // target observation for RMSE of training
     int predictions; // report predictions on training data
@@ -195,8 +183,8 @@ struct param {
 	char multiskill; // multiskill per observation flag, 0 - single skill, [separator character] otherwise
     // parse running settings
     bool init_reset; // init parameters specified
-    bool lo_lims_specd; // parameter limits s`pecified
-    bool hi_lims_specd; // parameter limits s`pecified
+    bool lo_lims_specd; // parameter limits specified
+    bool hi_lims_specd; // parameter limits specified
     bool stat_specd_gt2; // number of states specified to be >2
     // vocabilaries
     map<string,NCAT> *map_group_fwd; // string to id
@@ -384,7 +372,6 @@ NUMBER safe0num(NUMBER val); // convert number to a safe (0, inf) or (-inf, 0) r
 NUMBER safelog(NUMBER val); // safe log for prediction
 
 void add1DNumbersWeighted(NUMBER* sourse, NUMBER* target, NPAR size, NUMBER weight);
-
 void add2DNumbersWeighted(NUMBER** sourse, NUMBER** target, NPAR size1, NPAR size2, NUMBER weight);
 void add3DNumbersWeighted(NUMBER*** sourse, NUMBER*** target, NPAR size1, NPAR size2, NPAR size3, NUMBER weight);
 
@@ -396,6 +383,7 @@ NUMBER doLog10Scale1D(NUMBER *ar, NPAR size);
 NUMBER doLog10Scale2D(NUMBER **ar, NPAR size1, NPAR size2);
 NUMBER doLog10Scale1DGentle(NUMBER *grad, NUMBER *par, NPAR size);
 NUMBER doLog10Scale2DGentle(NUMBER **grad, NUMBER **par, NPAR size1, NPAR size2);
+NUMBER doLog10Scale3DGentle(NUMBER ***grad, NUMBER ***par, NPAR size1, NPAR size2, NPAR size3);
 
 void zeroLabels(NCAT xdat, struct data** x_data); // for skill of group
 void zeroLabels(struct param* param); // set counts in all data sequences to zero
@@ -407,8 +395,7 @@ void set_param_defaults(struct param *param);
 void RecycleFitData(NCAT xndat, struct data** x_data, struct param *param);
 
 // penalties
-NUMBER L2penalty(param* param, NUMBER w);
-NUMBER L2penalty(param* param, NUMBER w, NUMBER penalty_offset);
+NUMBER L2penalty(NUMBER C, NUMBER w, NUMBER Ccenter);
 
 #endif
 

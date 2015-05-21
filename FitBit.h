@@ -1,6 +1,6 @@
 /*
  
- Copyright (c) 2012-2014, Michael (Mikhail) Yudelson
+ Copyright (c) 2012-2015, Michael (Mikhail) Yudelson
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,9 @@ enum FIT_BIT_SLOT {
     FBS_PARm2     = 7, // e.g. PIm2
     FBS_GRAD      = 3, // e.g. gradPI
     FBS_GRADm1    = 4, // e.g. gradPIm1
+    FBS_GRADcopy  = 9, // e.g. gradPIcopy
     FBS_PARcopy   = 5, // e.g. PIcopy
+    FBS_DIR       = 8, // e.g. gradPIdir
     FBS_DIRm1     = 6  // e.g. gradPIdirm1
 };
 
@@ -74,20 +76,29 @@ public:
     NUMBER *gradPIm1; // previous gradient
     NUMBER **gradAm1; // previous gradient
     NUMBER **gradBm1; // previous gradient
-    NUMBER *PIcopy; // previous value
-    NUMBER **Acopy; // previous value
-    NUMBER **Bcopy; // previous value
+    NUMBER *gradPIcopy; // gradient copy
+    NUMBER **gradAcopy; // gradient copy
+    NUMBER **gradBcopy; // gradient copy
+    NUMBER *PIcopy; // copy
+    NUMBER **Acopy; // copy
+    NUMBER **Bcopy; // copy
+    NUMBER *dirPI; // step direction
+    NUMBER **dirA; // step direction
+    NUMBER **dirB; // step direction
     NUMBER *dirPIm1; // previous step direction
     NUMBER **dirAm1; // previous step direction
     NUMBER **dirBm1; // previous step direction
     NCAT xndat; // number of sequences of data
     struct data** x_data; // sequences of data
     NPAR projecttosimplex; // whether projection to simplex should be done
+    NPAR Cslice; // current slice during L2 norm penalty fitting
+    NPAR tag; // multippurpose
     
     FitBit(NPAR a_nS, NPAR a_nO, NCAT a_nK, NCAT a_nG, NUMBER a_tol);
     FitBit(NPAR a_nS, NPAR a_nO, NCAT a_nK, NCAT a_nG, NUMBER a_tol, NPAR a_projecttosimplex);
     ~FitBit();
     void init(enum FIT_BIT_SLOT fbs);
+    void negate(enum FIT_BIT_SLOT fbs);
     void link(NUMBER *a_PI, NUMBER **a_A, NUMBER **a_B, NCAT a_xndat, struct data** a_x_data);
     void toZero(enum FIT_BIT_SLOT fbs);
     void destroy(enum FIT_BIT_SLOT fbs);
@@ -95,10 +106,14 @@ public:
     void add(enum FIT_BIT_SLOT sourse_fbs, enum FIT_BIT_SLOT target_fbs);
     bool checkConvergence(FitResult *fr);
     void doLog10ScaleGentle(enum FIT_BIT_SLOT fbs);
+
+    // adding penalties
+    void addL2Penalty(enum FIT_BIT_VAR fbv, param* param, NUMBER factor);
 private:
     NUMBER tol;
 
     void init(NUMBER* &pi, NUMBER** &A, NUMBER** &B);
+    void negate(NUMBER* &pi, NUMBER** &A, NUMBER** &B);
     void toZero(NUMBER *pi, NUMBER **A, NUMBER **B);
     void destroy(NUMBER* &pi, NUMBER** &A, NUMBER** &B);
     void get(enum FIT_BIT_SLOT fbs, NUMBER* &a_PI, NUMBER** &a_A, NUMBER** &a_B);

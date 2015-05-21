@@ -1,6 +1,6 @@
 /*
  
- Copyright (c) 2012-2014, Michael (Mikhail) Yudelson
+ Copyright (c) 2012-2015, Michael (Mikhail) Yudelson
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -49,9 +49,8 @@ template <typename T>
 class StripedArray {
 public:
 	StripedArray();
-	StripedArray(NDAT _size, bool a_complex); // predefined size
+	StripedArray(NDAT _size); // predefined size
 	StripedArray(FILE *f, NDAT N);
-	StripedArray(bool a_complex);
 	~StripedArray();
 	NDAT getSize();
 	void add(T value);
@@ -67,7 +66,6 @@ private:
 	NDAT stripe_size;
 	NDAT nstripes;
 	NDAT size_last_stripe;
-    bool complex; // element stored is a pointer to an array (should be deleted further)
 	T** stripes;
 	void addStripe();
 };
@@ -80,14 +78,12 @@ StripedArray<T>::StripedArray() {
 	this->nstripes = 0;
 	this->size_last_stripe = 0;
 	this->stripes = NULL;
-    this->complex = false;
 }
 
 // predefined size
 template <typename T>
-StripedArray<T>::StripedArray(NDAT _size, bool a_complex) {
+StripedArray<T>::StripedArray(NDAT _size) {
 	stripe_size = 20000;
-    complex = a_complex;
 	size = _size;
 	nstripes = (NDAT)ceil((double)size/stripe_size);
 	size_last_stripe = (NDAT)fmod(size, (size_t)stripe_size);
@@ -103,7 +99,6 @@ StripedArray<T>::StripedArray(NDAT _size, bool a_complex) {
 template <typename T>
 StripedArray<T>::StripedArray(FILE *f, NDAT N) {
 	stripe_size = 20000;
-    complex = false;
 	size = N;
 	nstripes = (NDAT)ceil((double)N/stripe_size);
 	size_last_stripe = (NDAT)fmod(N, stripe_size);
@@ -122,21 +117,8 @@ StripedArray<T>::StripedArray(FILE *f, NDAT N) {
 }
 
 template <typename T>
-StripedArray<T>::StripedArray(bool a_complex) {
-	size = 0;
-	stripe_size = 20000;
-	nstripes = 0;
-	size_last_stripe = 0;
-	stripes = NULL;
-    complex = a_complex;
-}
-
-template <typename T>
 StripedArray<T>::~StripedArray() {
 	for(NDAT i=0; i<this->nstripes;i++) {
-        if(this->complex)
-            for(NDAT j=0; j<( (i<(this->nstripes-1))?this->stripe_size:this->size_last_stripe );j++)
-                free(  (void *)(this->stripes[i][j]) );
 		free(this->stripes[i]);
     }
 	free(this->stripes);

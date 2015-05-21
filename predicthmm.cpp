@@ -1,6 +1,6 @@
 /*
  
- Copyright (c) 2012-2014, Michael (Mikhail) Yudelson
+ Copyright (c) 2012-2015, Michael (Mikhail) Yudelson
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -95,9 +95,26 @@ int main (int argc, char ** argv) {
     
     // copy partial info from param_model to param
     if(param.nO==0) param.nO = param_model.nO;
-
+	
+    // copy number of states from the model
+    param.nS = param_model.nS;
+    
+    // if number of states or observations >2, then no check
+    if( param.nO>2 || param.nS>2)
+        param.do_not_check_constraints = 1;
+    
+    //
+    // create hmm Object
+    //
+    HMMProblem *hmm = NULL;
+    switch(param.structure)
+    {
+        case STRUCTURE_SKILL: // Conjugate Gradient Descent
+        case STRUCTURE_GROUP: // Conjugate Gradient Descent
+            hmm = new HMMProblem(&param);
+            break;
+    }
     // read model body
-    HMMProblem * hmm = new HMMProblem(&param);
     hmm->readModelBody(fid, &param_model, &line_no, overwrite);
   	fclose(fid);
 	free(line);
@@ -109,8 +126,7 @@ int main (int argc, char ** argv) {
 //    if(param.metrics>0 || param.predictions>0) {
         metrics = Calloc(NUMBER, (size_t)7);// LL, AIC, BIC, RMSE, RMSEnonull, Acc, Acc_nonull;
 //    }
-
-    hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_skill_stacked, param.dat_skill_rcount, param.dat_skill_rix, false/*all, not only unlabelled*/);
+    hmm->predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_skill_stacked, param.dat_skill_rcount, param.dat_skill_rix, param.predictions==1/*1 -- only unlabelled, 2 -- all*/);
 //    predict(predict_file, hmm);
 	if(param.quiet == 0)
 		printf("predicting is done in %8.6f seconds\n",(NUMBER)(clock()-tm)/CLOCKS_PER_SEC);
@@ -210,3 +226,94 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *model_f
         }
 	}
 }
+
+void predict(const char *predict_file, HMMProblem *hmm) {
+	FILE *fid = fopen(predict_file,"w");
+	if(fid == NULL)
+	{
+		fprintf(stderr,"Can't open prediction output file %s\n",predict_file);
+		exit(1);
+	}
+
+	NDAT t;
+	NCAT g, k;
+	NPAR i, j, m, o;
+	NUMBER *local_pred = init1D<NUMBER>(param.nO); // local prediction
+	NUMBER pLe[param.nS];// p(L|evidence);
+	NUMBER pLe_denom; // p(L|evidence) denominator
+	NUMBER ***group_skill_map = init3D<NUMBER>(param.nG, param.nK, param.nS);
+    NCAT *ar;
+    int n;
+ 	// initialize
+    struct data dt;
+	for(g=0; g<param.nG; g++)
+		for(k=0; k<param.nK; k++) {
+			for(i=0; i<param.nO; i++) {
+                dt.g = g;
+                dt.k = k;
+                group_skill_map[g][k][i] = hmm->getPI(&dt,i);
+            }
+
+		}
+	NDAT predict_idx = 0;
+
+	for(t=0; t<param.N; t++) {
+        o = param.dat_obs[t];
+        if(param.multiskill==0) {
+            k = param.dat_skill[t];
+            ar = &k;
+            n = 1;
+        } else {
+            ar = &param.dat_skill_stacked[ param.dat_skill_rix[t] ];
+            n = param.dat_skill_rcount[t];
+        }
+        g = param.dat_group[t];
+        dt.g = g;
+
+		// produce prediction and copy to result
+		if(k<0) { // if no skill label
+			//for(m=0; m<param.nO; m++)
+			//	result[t][m] = param.null_obs_ratio[m];
+			if(o==-1 || param.predictions) {// if output
+				for(m=0; m<param.nO; m++)
+					fprintf(fid,"%12.10f%s",hmm->getNullSkillObs(m),(m<(param.nO-1))?"\t":"\n");
+				predict_idx++;
+			}
+			continue;
+		}
+        // produce prediction and copy to result
+        hmm->producePCorrect(group_skill_map, local_pred, ar, n, &dt);
+        for(int l=0; l<n; l++) {
+            k = ar[l];
+            dt.k = k;
+
+            if(o>-1) { // known observations
+                // update p(L)
+                pLe_denom = 0.0;
+                // 1. pLe =  (L .* B(:,o)) ./ ( L'*B(:,o));
+                for(i=0; i<param.nS; i++) pLe_denom += group_skill_map[g][k][i] * hmm->getB(&dt,i,o);
+                for(i=0; i<param.nS; i++) pLe[i] = group_skill_map[g][k][i] * hmm->getB(&dt,i,o) / safe0num(pLe_denom);
+                // 2. L = (pLe'*A)';
+                for(i=0; i<param.nS; i++) group_skill_map[g][k][i] = 0.0;
+                for(j=0; j<param.nS; j++)
+                    for(i=0; i<param.nS; i++)
+                        group_skill_map[g][k][j] += pLe[i] * hmm->getA(&dt,i,j);//A[i][j];
+            } else { // unknown observation
+                // 2. L = (pL'*A)';
+                for(i=0; i<param.nS; i++) pLe[i] = group_skill_map[g][k][i]; // copy first;
+                for(i=0; i<param.nS; i++) group_skill_map[g][k][i] = 0.0; // erase old value
+                for(j=0; j<param.nS; j++)
+                    for(i=0; i<param.nS; i++)
+                        group_skill_map[g][k][j] += pLe[i] * hmm->getA(&dt,i,j);
+            }// observations
+            if(param.predictions>0 || o==-1) { // write predictions file if it was opened
+                for(m=0; m<param.nO; m++)
+                    fprintf(fid,"%12.10f%s",local_pred[m],(m<(param.nO-1))?"\t":"\n");
+            }
+        }// for all subskills
+	} // for all data
+	free(line);
+	free(local_pred);
+	fclose(fid);
+}
+

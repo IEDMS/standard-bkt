@@ -1,6 +1,6 @@
 /*
  
- Copyright (c) 2012-2014, Michael (Mikhail) Yudelson
+ Copyright (c) 2012-2015, Michael (Mikhail) Yudelson
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -41,21 +41,32 @@ FitBit::FitBit(NPAR a_nS, NPAR a_nO, NCAT a_nK, NCAT a_nG, NUMBER a_tol) {
     this->PIm1 = NULL;
     this->Am1 = NULL;
     this->Bm1 = NULL;
+    this->PIm2 = NULL;
+    this->Am2 = NULL;
+    this->Bm2 = NULL;
     this->gradPI = NULL;
     this->gradA = NULL;
     this->gradB = NULL;
     this->gradPIm1 = NULL;
     this->gradAm1 = NULL;
     this->gradBm1 = NULL;
+    this->gradPIcopy = NULL;
+    this->gradAcopy = NULL;
+    this->gradBcopy = NULL;
     this->PIcopy = NULL;
     this->Acopy = NULL;
     this->Bcopy = NULL;
+    this->dirPI = NULL;
+    this->dirA = NULL;
+    this->dirB = NULL;
     this->dirPIm1 = NULL;
     this->dirAm1 = NULL;
     this->dirBm1 = NULL;
     this->xndat = 0;
     this->x_data = 0;
     this->projecttosimplex = 1;
+    this->Cslice = 0;
+    this->tag = 0;
 }
 
 FitBit::FitBit(NPAR a_nS, NPAR a_nO, NCAT a_nK, NCAT a_nG, NUMBER a_tol, NPAR a_projecttosimplex){
@@ -70,21 +81,32 @@ FitBit::FitBit(NPAR a_nS, NPAR a_nO, NCAT a_nK, NCAT a_nG, NUMBER a_tol, NPAR a_
     this->PIm1 = NULL;
     this->Am1 = NULL;
     this->Bm1 = NULL;
+    this->PIm2 = NULL;
+    this->Am2 = NULL;
+    this->Bm2 = NULL;
     this->gradPI = NULL;
     this->gradA = NULL;
     this->gradB = NULL;
     this->gradPIm1 = NULL;
     this->gradAm1 = NULL;
     this->gradBm1 = NULL;
+    this->gradPIcopy = NULL;
+    this->gradAcopy = NULL;
+    this->gradBcopy = NULL;
     this->PIcopy = NULL;
     this->Acopy = NULL;
     this->Bcopy = NULL;
+    this->dirPI = NULL;
+    this->dirA = NULL;
+    this->dirB = NULL;
     this->dirPIm1 = NULL;
     this->dirAm1 = NULL;
     this->dirBm1 = NULL;
     this->xndat = 0;
     this->x_data = 0;
     this->projecttosimplex = a_projecttosimplex;
+    this->Cslice = 0;
+    this->tag = 0;
 }
 
 FitBit::~FitBit() {
@@ -103,33 +125,55 @@ FitBit::~FitBit() {
     if(this->gradPIm1 != NULL) free(this->gradPIm1);
     if(this->gradAm1 != NULL) free2D<NUMBER>(this->gradAm1, (NDAT)this->nS);
     if(this->gradBm1 != NULL) free2D<NUMBER>(this->gradBm1, (NDAT)this->nS);
+    if(this->gradPIcopy != NULL) free(this->gradPIcopy);
+    if(this->gradAcopy != NULL) free2D<NUMBER>(this->gradAcopy, (NDAT)this->nS);
+    if(this->gradBcopy != NULL) free2D<NUMBER>(this->gradBcopy, (NDAT)this->nS);
     if(this->PIcopy != NULL) free(this->PIcopy);
     if(this->Acopy != NULL) free2D<NUMBER>(this->Acopy, (NDAT)this->nS);
     if(this->Bcopy != NULL) free2D<NUMBER>(this->Bcopy, (NDAT)this->nS);
+    if(this->dirPI != NULL) free(this->dirPI);
+    if(this->dirA != NULL) free2D<NUMBER>(this->dirA, (NDAT)this->nS);
+    if(this->dirB != NULL) free2D<NUMBER>(this->dirB, (NDAT)this->nS);
     if(this->dirPIm1 != NULL) free(this->dirPIm1);
     if(this->dirAm1 != NULL) free2D<NUMBER>(this->dirAm1, (NDAT)this->nS);
     if(this->dirBm1 != NULL) free2D<NUMBER>(this->dirBm1, (NDAT)this->nS);
 }
 
 void FitBit::init(NUMBER* &a_PI, NUMBER** &a_A, NUMBER** &a_B) {
-//    if(this->pi != NULL) {
+    if(this->pi != NULL) {
         if(a_PI == NULL)
             a_PI = init1D<NUMBER>((NDAT)this->nS); // init1DNumber(this->nS);
         else
             toZero1D<NUMBER>(a_PI, (NDAT)this->nS);
-//    }
-//    if(this->A  != NULL) {
+    }
+    if(this->A  != NULL) {
         if(a_A == NULL)
             a_A  = init2D<NUMBER>((NDAT)this->nS, (NDAT)this->nS);
         else
             toZero2D<NUMBER>(a_A,  (NDAT)this->nS, (NDAT)this->nS);
-//    }
-//    if(this->B  != NULL) {
+    }
+    if(this->B  != NULL) {
         if(a_B == NULL)
             a_B  = init2D<NUMBER>((NDAT)this->nS, (NDAT)this->nO);
         else
             toZero2D<NUMBER>(a_B, (NDAT)this->nS, (NDAT)this->nO);
-//    }
+    }
+}
+
+void FitBit::negate(NUMBER* &a_PI, NUMBER** &a_A, NUMBER** &a_B) {
+    if(this->pi != NULL) {
+        for(NPAR i=0; i<this->nS; i++) a_PI[i] = -a_PI[i];
+    }
+    if(this->A  != NULL) {
+        for(NPAR i=0; i<this->nS; i++)
+            for(NPAR j=0; j<this->nS; j++)
+                a_A[i][j] = -a_A[i][j];
+    }
+    if(this->B  != NULL) {
+        for(NPAR i=0; i<this->nS; i++)
+            for(NPAR m=0; m<this->nO; m++)
+                a_B[i][m] = -a_B[i][m];
+    }
 }
 
 void FitBit::link(NUMBER *a_PI, NUMBER **a_A, NUMBER **a_B, NCAT a_xndat, struct data** a_x_data) {
@@ -184,11 +228,51 @@ void FitBit::init(enum FIT_BIT_SLOT fbs){
         case FBS_GRADm1:
             init(this->gradPIm1, this->gradAm1, this->gradBm1);
             break;
+        case FBS_GRADcopy:
+            init(this->gradPIcopy, this->gradAcopy, this->gradBcopy);
+            break;
         case FBS_PARcopy:
             init(this->PIcopy, this->Acopy, this->Bcopy);
             break;
+        case FBS_DIR:
+            init(this->dirPI, this->dirA, this->dirB);
+            break;
         case FBS_DIRm1:
             init(this->dirPIm1, this->dirAm1, this->dirBm1);
+            break;
+        default:
+            break;
+    }
+}
+
+void FitBit::negate(enum FIT_BIT_SLOT fbs){
+    switch (fbs) {
+        case FBS_PAR:
+            negate(this->pi, this->A, this->B);
+            break;
+        case FBS_PARm1:
+            negate(this->PIm1, this->Am1, this->Bm1);
+            break;
+        case FBS_PARm2:
+            negate(this->PIm2, this->Am2, this->Bm2);
+            break;
+        case FBS_GRAD:
+            negate(this->gradPI, this->gradA, this->gradB);
+            break;
+        case FBS_GRADm1:
+            negate(this->gradPIm1, this->gradAm1, this->gradBm1);
+            break;
+        case FBS_GRADcopy:
+            negate(this->gradPIcopy, this->gradAcopy, this->gradBcopy);
+            break;
+        case FBS_PARcopy:
+            negate(this->PIcopy, this->Acopy, this->Bcopy);
+            break;
+        case FBS_DIR:
+            negate(this->dirPI, this->dirA, this->dirB);
+            break;
+        case FBS_DIRm1:
+            negate(this->dirPIm1, this->dirAm1, this->dirBm1);
             break;
         default:
             break;
@@ -212,8 +296,14 @@ void FitBit::toZero(enum FIT_BIT_SLOT fbs){
         case FBS_GRADm1:
             toZero(this->gradPIm1, this->gradAm1, this->gradBm1);
             break;
+        case FBS_GRADcopy:
+            toZero(this->gradPIcopy, this->gradAcopy, this->gradBcopy);
+            break;
         case FBS_PARcopy:
             toZero(this->PIcopy, this->Acopy, this->Bcopy);
+            break;
+        case FBS_DIR:
+            toZero(this->dirPI, this->dirA, this->dirB);
             break;
         case FBS_DIRm1:
             toZero(this->dirPIm1, this->dirAm1, this->dirBm1);
@@ -240,8 +330,14 @@ void FitBit::destroy(enum FIT_BIT_SLOT fbs){
         case FBS_GRADm1:
             destroy(this->gradPIm1, this->gradAm1, this->gradBm1);
             break;
+        case FBS_GRADcopy:
+            destroy(this->gradPIcopy, this->gradAcopy, this->gradBcopy);
+            break;
         case FBS_PARcopy:
             destroy(this->PIcopy, this->Acopy, this->Bcopy);
+            break;
+        case FBS_DIR:
+            destroy(this->dirPI, this->dirA, this->dirB);
             break;
         case FBS_DIRm1:
             destroy(this->dirPIm1, this->dirAm1, this->dirBm1);
@@ -278,10 +374,20 @@ void FitBit::get(enum FIT_BIT_SLOT fbs, NUMBER* &a_PI, NUMBER** &a_A, NUMBER** &
             a_A  = this->gradAm1;
             a_B  = this->gradBm1;
             break;
+        case FBS_GRADcopy:
+            a_PI = this->gradPIcopy;
+            a_A  = this->gradAcopy;
+            a_B  = this->gradBcopy;
+            break;
         case FBS_PARcopy:
             a_PI = this->PIcopy;
             a_A  = this->Acopy;
             a_B  = this->Bcopy;
+            break;
+        case FBS_DIR:
+            a_PI = this->dirPI;
+            a_A  = this->dirA;
+            a_B  = this->dirB;
             break;
         case FBS_DIRm1:
             a_PI = this->dirPIm1;
@@ -332,19 +438,81 @@ bool FitBit::checkConvergence(FitResult *fr) {
 			critetion += pow(this->B[i][k] - this->Bm1[i][k],2);
 		}
 	}
-	return sqrt(critetion) < this->tol; // double the truth or false
+    
+    NUMBER critetion_oscil = 0; // oscillation between PAR and PARm1, i.e. PAR is close to PARm2
+    if( (!(sqrt(critetion) < this->tol)) && ( this->PIm2 != NULL || this->Am2 != NULL || this->Bm2 != NULL ) ) {
+        for(NPAR i=0; i<this->nS; i++)
+        {
+            if(this->pi != NULL) critetion_oscil += pow( this->pi[i]-this->PIm2[i], 2 )/*:0*/;
+            for(NPAR j=0; (this->A != NULL) && j<this->nS; j++) {
+                critetion_oscil += pow(this->A[i][j] - this->Am2[i][j],2);
+            }
+            for(NPAR k=0; (this->B != NULL) && k<this->nO; k++) {
+                critetion_oscil += pow(this->B[i][k] - this->Bm2[i][k],2);
+            }
+        }
+        return sqrt(critetion_oscil) < this->tol; // double the truth or false
+    }
+    else
+        return sqrt(critetion) < this->tol; // double the truth or false
         
 //    return (fr->pOmid - fr->pO) < this->tol;
 }
 
 void FitBit::doLog10ScaleGentle(enum FIT_BIT_SLOT fbs) {
-    // fbs - gradient or direction
+//    // fbs - gradient or direction
     NUMBER *a_PI = NULL;
     NUMBER **a_A = NULL;
     NUMBER **a_B = NULL;
     get(fbs, a_PI, a_A, a_B);
-	if(this->pi != NULL) doLog10Scale1DGentle(a_PI, this->pi, this->nS);
-	if(this->A  != NULL) doLog10Scale2DGentle(a_A,  this->A,  this->nS, this->nS);
-	if(this->B  != NULL) doLog10Scale2DGentle(a_B,  this->B,  this->nS, this->nO);
+    
+    
+    NPAR nS = this->nS, nO = this->nO;
+    NDAT n = (  (this->pi != NULL)*1 + (this->A != NULL)*nS + (this->B != NULL)*nO  ) * nS;
+    NUMBER* grad = Calloc(NUMBER, n);
+    NUMBER* par = Calloc(NUMBER, n);
+    NDAT cpar = 0, cgrad = 0;
+    for(NPAR i=0; i<nS; i++) {
+        if(this->pi != NULL) { par[cpar++] = this->pi[i]; grad[cgrad++] = a_PI[i]; }
+        if(this->A  != NULL) for(NPAR j=0; j<nS; j++) { par[cpar++] = this->A[i][j]; grad[cgrad++] = a_A[i][j]; }
+        if(this->B  != NULL) for(NPAR m=0; m<nO; m++) { par[cpar++] = this->B[i][m]; grad[cgrad++] = a_B[i][m]; }
+    }
+    
+    NUMBER scale = doLog10Scale1DGentle(grad, par, n);
+    
+    for(NPAR i=0; i<nS; i++) {
+        if(this->pi != NULL) { a_PI[i] *= scale; }
+        if(this->A  != NULL) for(NPAR j=0; j<nS; j++) { a_A[i][j] *= scale; }
+        if(this->B  != NULL) for(NPAR m=0; m<nO; m++) { a_B[i][m] *= scale; }
+    }
+    free(grad);
+    free(par);
 }
+
+void FitBit::addL2Penalty(enum FIT_BIT_VAR fbv, param* param, NUMBER factor) {
+    NPAR i, j, m;
+    if(param->Cslices==0) return;
+    NUMBER C = param->Cw[this->Cslice];
+    switch (fbv) {
+        case FBV_PI:
+            for(i=0; i<this->nS; i++)
+                this->gradPI[i] += factor * L2penalty(C, this->pi[i], param->Ccenters[ this->Cslice * 3 + 0] );
+            break;
+        case FBV_A:
+            for(i=0; i<this->nS; i++)
+                for(j=0; j<this->nS; j++)
+                    this->gradA[i][j] += factor * L2penalty(C, this->A[i][j], param->Ccenters[ this->Cslice * 3 + 1] );
+            break;
+        case FBV_B:
+            for(i=0; i<this->nS; i++)
+                for(m=0; m<this->nO; m++)
+                    this->gradB[i][m] += factor * L2penalty(C, this->B[i][m], param->Ccenters[ this->Cslice * 3 + 2] );
+            break;
+            
+        default:
+            fprintf(stderr,"Error, there is no such FitBit variable\n");
+            break;
+    }
+}
+
 

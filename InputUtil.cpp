@@ -1,6 +1,6 @@
 /*
  
- Copyright (c) 2012-2014, Michael (Mikhail) Yudelson
+ Copyright (c) 2012-2015, Michael (Mikhail) Yudelson
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -120,7 +120,6 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
         striped_dat_skill_rix     = new StripedArray<NCAT>();
     }
 	StripedArray<NCAT> * striped_dat_item = new StripedArray<NCAT>();
-    StripedArray<NPAR> *striped_dat_slice = NULL;
 
     param->map_group_fwd = new map<string,NCAT>();
     param->map_group_bwd = new map<NCAT,string>();
@@ -301,6 +300,7 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
     
     // copy striped to lined
     param->dat_obs = striped_dat_obs->toArray();
+  
     delete striped_dat_obs;
     param->dat_group = striped_dat_group->toArray();
     delete striped_dat_group;
@@ -592,6 +592,7 @@ bool InputUtil::toBin(struct param * param, const char *fn) {
     for (it =  param->map_step_bwd->begin(); it != param->map_step_bwd->end(); ++it) {
         writeString(fid, it->second);
     }
+    
     
     fclose(fid);
     return true;

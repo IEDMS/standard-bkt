@@ -1,6 +1,6 @@
 /*
  
- Copyright (c) 2012-2014, Michael (Mikhail) Yudelson
+ Copyright (c) 2012-2015, Michael (Mikhail) Yudelson
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -26,6 +26,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
  */
+
 #include "utils.h"
 using namespace std;
 
@@ -106,45 +107,80 @@ bool issimplexbounded(NUMBER* ar, NUMBER *lb, NUMBER *ub, NPAR size) {
 	return fabs(sum)<SAFETY;
 }
 
-
 void projectsimplex(NUMBER* ar, NPAR size) {
-	NPAR i, num_at_hi, num_at_lo; // number of elements at lower,upper boundary
-	NPAR *at_hi = Calloc(NPAR, (size_t)size);
-	NPAR *at_lo = Calloc(NPAR, (size_t)size);
-	NUMBER err, lambda;
-	while( !issimplex(ar, size)) {
+    NPAR i, num_at_hi, num_at_lo; // number of elements at lower,upper boundary
+    NPAR *at_hi = Calloc(NPAR, (size_t)size);
+    NPAR *at_lo = Calloc(NPAR, (size_t)size);
+    NUMBER err, lambda;
+    NUMBER* ar_copy = Calloc(NUMBER, (size_t)size);
+    memcpy(ar_copy, ar, (size_t)size);
+    int iter = 0;
+    while( !issimplex(ar, size) ) {
         lambda = 0;
-		num_at_hi = 0;
-		num_at_lo = 0;
-		err = -1; // so that of the sum is over 1, the error is 1-sum
-		// threshold
-		for(i=0; i<size; i++) {
-			at_lo[i] = (ar[i]<0)?1:0;
-			ar[i] = (at_lo[i]==1)?0:ar[i];
-			num_at_lo = (NPAR)(num_at_lo + at_lo[i]);
+        num_at_hi = 0;
+        num_at_lo = 0;
+        err = -1;
+        // threshold
+        for(i=0; i<size; i++) {
+            at_lo[i] = (ar[i]<=/*lb[i]*/0)?1:0;
+            ar[i] = (at_lo[i]==1)?/*lb[i]*/0:ar[i];
+            num_at_lo = (NPAR)( num_at_lo + at_lo[i] );
             
-			at_hi[i] = (ar[i]>1)?1:0;
-			ar[i] = (at_hi[i]==1)?1:ar[i];
-			num_at_hi = (NPAR)(num_at_hi + at_hi[i]);
-			
-			err += ar[i];
-		}
-		if (size > (num_at_hi + num_at_lo) )
-			lambda = err / (size - (num_at_hi + num_at_lo));
-		for(i=0; i<size; i++)
-			ar[i] -= (at_lo[i]==0 && at_hi[i]==0)?lambda:0;
-		
-	} // until satisfied
-    // force last to be 1 - sum of all but last
-    err = 1;
-    for(i=0; i<(size-1); i++) err -= ar[i];
-    ar[size-1] = err;
-    err = 1;
-    for(i=1; i<(size-0); i++) err -= ar[i];
-    ar[0] = err;
-
-	free(at_hi);
-	free(at_lo);
+            at_hi[i] = (ar[i]>=/*ub[i]*/1)?1:0;
+            ar[i] = (at_hi[i]==1)?/*ub[i]*/1:ar[i];
+            num_at_hi = (NPAR)( num_at_hi + at_hi[i] );
+            
+            err += ar[i];
+        }
+        //		if (size > (num_at_hi + num_at_lo) )
+        //			lambda = err / (size - (num_at_hi + num_at_lo));
+        if ( err > 0 && size > num_at_lo )
+            lambda = err / (size - num_at_lo);
+        else if ( err < 0 && size > num_at_hi )
+            lambda = err / (size - num_at_hi);
+        
+        int will_suffer_from_lambda = 0; // those values that, if lessened by lambda, will be below 0 or over 1
+        NUMBER err2 = 0.0, lambda2 = 0.0;
+        for(i=0; i<size; i++) {
+            if( (at_lo[i]==0 && at_hi[i]==0) ) {
+                if( ar[i] < lambda ) {
+                    will_suffer_from_lambda++;
+                    err2 += ar[i];
+                }
+            }
+        }
+        
+        if( will_suffer_from_lambda == 0 ) {
+            for(i=0; i<size; i++) {
+                ar[i] -= (at_lo[i]==0 && err>0)?lambda:0;
+                ar[i] -= (at_hi[i]==0 && err<0)?lambda:0;
+            }
+        } else {
+            lambda2 = (err-err2) / ( size - (num_at_hi + num_at_lo) - will_suffer_from_lambda );
+            for(i=0; i<size; i++) {
+                if( at_lo[i]==0 && at_hi[i]==0 ) {
+                    ar[i] = (ar[i]<lambda)?0:(ar[i]-lambda2);
+                }
+            }
+        }
+        iter++;
+        if(iter==100) {
+            fprintf(stderr,"WARNING! Stuck in projectsimplex().\n");
+            exit(1);
+        }
+    } // until satisfied
+    
+    NUMBER sum = 0.0;
+    for(i=0; i<size; i++) {
+        sum += ar[i];
+        if(ar[i]<0 || ar[i] >1)
+            fprintf(stderr, "ERROR! projected value is not within [0, 1] range!\n");
+    }
+    if( fabs(sum-1)>SAFETY)
+        fprintf(stderr, "ERROR! projected simplex does not sum to 1!\n");
+    
+    free(at_hi);
+    free(at_lo);
 }
 
 void projectsimplexbounded(NUMBER* ar, NUMBER *lb, NUMBER *ub, NPAR size) {
@@ -152,37 +188,70 @@ void projectsimplexbounded(NUMBER* ar, NUMBER *lb, NUMBER *ub, NPAR size) {
 	NPAR *at_hi = Calloc(NPAR, (size_t)size);
 	NPAR *at_lo = Calloc(NPAR, (size_t)size);
 	NUMBER err, lambda;
-	while( !issimplexbounded(ar, lb, ub, size)) {
+    NUMBER* ar_copy = Calloc(NUMBER, (size_t)size);
+    memcpy(ar_copy, ar, (size_t)size);
+    int iter = 0;
+	while( !issimplexbounded(ar, lb, ub, size) ) {
         lambda = 0;
 		num_at_hi = 0;
 		num_at_lo = 0;
 		err = -1;
 		// threshold
 		for(i=0; i<size; i++) {
-			at_lo[i] = (ar[i]<lb[i])?1:0;
+			at_lo[i] = (ar[i]<=lb[i])?1:0;
 			ar[i] = (at_lo[i]==1)?lb[i]:ar[i];
 			num_at_lo = (NPAR)( num_at_lo + at_lo[i] );
 			
-			at_hi[i] = (ar[i]>ub[i])?1:0;
+			at_hi[i] = (ar[i]>=ub[i])?1:0;
 			ar[i] = (at_hi[i]==1)?ub[i]:ar[i];
 			num_at_hi = (NPAR)( num_at_hi + at_hi[i] );
 			
 			err += ar[i];
 		}
-		if (size > (num_at_hi + num_at_lo) )
-			lambda = err / (size - (num_at_hi + num_at_lo));
+        if ( err > 0 && size > num_at_lo )
+            lambda = err / (size - num_at_lo);
+        else if ( err < 0 && size > num_at_hi )
+            lambda = err / (size - num_at_hi);
+
+        int will_suffer_from_lambda = 0; // those values that, if lessened by lambda, will be below 0 or over 1
+        NUMBER err2 = 0.0, lambda2 = 0.0;
+        for(i=0; i<size; i++) {
+            if( (at_lo[i]==0 && at_hi[i]==0) ) {
+                if( ar[i] < lambda ) {
+                    will_suffer_from_lambda++;
+                    err2 += ar[i];
+                }
+            }
+        }
         
-		for(i=0; i<size; i++)
-			ar[i] -= (at_lo[i]==0 && at_hi[i]==0)?lambda:0;
-		
+        if( will_suffer_from_lambda == 0 ) {
+            for(i=0; i<size; i++) {
+                ar[i] -= (at_lo[i]==0 && err>0)?lambda:0;
+                ar[i] -= (at_hi[i]==0 && err<0)?lambda:0;
+            }
+        } else {
+            lambda2 = (err-err2) / ( size - (num_at_hi + num_at_lo) - will_suffer_from_lambda );
+            for(i=0; i<size; i++) {
+                if( at_lo[i]==0 && at_hi[i]==0 ) {
+                    ar[i] = (ar[i]<lambda)?0:(ar[i]-lambda2);
+                }
+            }
+        }
+        iter++;
+        if(iter==100) {
+            fprintf(stderr,"WARNING! Stuck in projectsimplexbounded().\n");
+            exit(1);
+        }
 	} // until satisfied
-    // force last to be 1 - sum of all but last
-    err = 1;
-    for(i=0; i<(size-1); i++) err -= ar[i];
-    ar[size-1] = err;
-    err = 1;
-    for(i=1; i<(size-0); i++) err -= ar[i];
-    ar[0] = err;
+    
+    NUMBER sum = 0.0;
+    for(i=0; i<size; i++) {
+        sum += ar[i];
+        if(ar[i]<0 || ar[i] >1)
+            fprintf(stderr, "ERROR! projected value is not within [0, 1] range!\n");
+    }
+    if( fabs(sum-1)>SAFETY)
+        fprintf(stderr, "ERROR! projected simplex does not sum to 1!\n");
     
 	free(at_hi);
 	free(at_lo);
@@ -210,9 +279,16 @@ void add1DNumbersWeighted(NUMBER* sourse, NUMBER* target, NPAR size, NUMBER weig
 }
 
 void add2DNumbersWeighted(NUMBER** sourse, NUMBER** target, NPAR size1, NPAR size2, NUMBER weight) {
-	for(NPAR i=0; i<size1; i++)
-		for(NPAR j=0; j<size2; j++)
-			target[i][j] = target[i][j] + sourse[i][j]*weight;
+    for(NPAR i=0; i<size1; i++)
+        for(NPAR j=0; j<size2; j++)
+            target[i][j] = target[i][j] + sourse[i][j]*weight;
+}
+
+void add3DNumbersWeighted(NUMBER*** sourse, NUMBER*** target, NPAR size1, NPAR size2, NPAR size3, NUMBER weight) {
+    for(NPAR i=0; i<size1; i++)
+        for(NPAR j=0; j<size2; j++)
+            for(NPAR l=0; l<size3; l++)
+                target[i][j][l] = target[i][j][l] + sourse[i][j][l]*weight;
 }
 
 bool isPasses(NUMBER* ar, NPAR size) {
@@ -256,9 +332,10 @@ NUMBER doLog10Scale1DGentle(NUMBER *grad, NUMBER *par, NPAR size) {
             min_delta = candidate;
 	}
     max_grad = max_grad / pow(10, max_10_scale);
-    if(max_10_scale > 0)
+    if(max_10_scale > 0) {
         for(i=0; i<size; i++)
             grad[i] = ( 0.95 * min_delta / max_grad) * grad[i] / pow(10, max_10_scale);
+    }
     return ( 0.95 * min_delta / max_grad ) / pow(10, max_10_scale);
 }
 
@@ -290,6 +367,35 @@ NUMBER doLog10Scale2DGentle(NUMBER **grad, NUMBER **par, NPAR size1, NPAR size2)
 	return ( 0.95 * min_delta / max_grad ) / pow(10, max_10_scale);
 }
 
+// Gentle - as per max distance to go toward extreme value of 0 or 1
+NUMBER doLog10Scale3DGentle(NUMBER ***grad, NUMBER ***par, NPAR size1, NPAR size2, NPAR size3) {
+    NPAR i,j,k;
+    NUMBER max_10_scale = 0, candidate, min_delta = 1, max_grad = 0;
+    for(i=0; i<size1; i++)
+        for(j=0; j<size2; j++)
+            for(k=0; k<size3; k++) {
+                if( fabs(grad[i][j][k]) < SAFETY ) // 0 gradient
+                    continue;
+                // scale
+                if(max_grad < fabs(grad[i][j][k]))
+                    max_grad = fabs(grad[i][j][k]);
+                candidate = ceil( log10( fabs(grad[i][j][k]) ) );
+                if(candidate > max_10_scale)
+                    max_10_scale = candidate;
+                // delta: if grad<0 - distance to 1, if grad>0 - distance to 0
+                candidate = (grad[i][j][k]<0)*(1-par[i][j][k]) + (grad[i][j][k]>0)*(par[i][j][k]) +
+                ( (fabs(par[i][j][k])< SAFETY) || (fabs(1-par[i][j][k])< SAFETY) ); // these terms are there to avoid already extreme 0, 1 values
+                if( candidate < min_delta)
+                    min_delta = candidate;
+            }
+    max_grad = max_grad / pow(10, max_10_scale);
+    if(max_10_scale >0 )
+        for(i=0; i<size1; i++)
+            for(j=0; j<size2; j++)
+                for(k=0; k<size3; k++)
+                    grad[i][j][k] = ( 0.95 * min_delta / max_grad) * grad[i][j][k] / pow(10, max_10_scale);
+    return ( 0.95 * min_delta / max_grad ) / pow(10, max_10_scale);
+}
 
 
 // for skill of group
@@ -318,7 +424,9 @@ void set_param_defaults(struct param *param) {
     param->metrics_target_obs    = 0;
     param->predictions           = 0;
     param->binaryinput           = 0;
-	param->C                     = 0;
+	param->Cw                     = Calloc(NUMBER, (size_t)1);
+    param->Cw[0]                  = 0;
+    param->Ccenters              = NULL;
     param->initfile[0]           = 0; // 1st bit is 0 - no file
 	param->init_params			 = Calloc(NUMBER, (size_t)5);
 	param->init_params[0] = 0.5; // PI[0]
@@ -346,9 +454,10 @@ void set_param_defaults(struct param *param) {
     param->map_skill_fwd = NULL;
     param->map_skill_bwd = NULL;
 	// derived from data - set to 0
-	param->N  = 0; //will be dynamically set in read_data_...()
+    param->N  = 0; //will be dynamically set in read_data_...()
+    param->Nstacked  = 0; //will be dynamically set in read_data_...()
 	param->nS = 2;
-	param->nO = 2;
+	param->nO = 0;
 	param->nG = 0;
 	param->nK = 0;
 	param->nI = 0;
@@ -366,9 +475,9 @@ void set_param_defaults(struct param *param) {
     param->null_skills = NULL;
 	// fitting specific - Armijo rule
 	param->ArmijoC1            = 1e-4;
-	param->ArmijoC2            = 0.9;
+	param->ArmijoC2            = 0.9; // since we're not newton method
 	param->ArmijoReduceFactor  = 2;//1/0.9;//
-	param->ArmijoSeed          = 1; //1; - since we use smooth stepping 1 is the only thing we need
+	param->ArmijoSeed          = 0.5; //1; - since we use smooth stepping 1 is the only thing we need
     param->ArmijoMinStep       = 0.001; //  0.000001~20steps, 0.001~10steps
     // temporary experimental;
     param->block_fitting[0] = 0; // no bocking fitting for PI
@@ -398,6 +507,10 @@ void destroy_input_data(struct param *param) {
     if(param->dat_skill_stacked != NULL) free( param->dat_skill_stacked );
     if(param->dat_skill_rcount != NULL) free( param->dat_skill_rcount );
     if(param->dat_skill_rix != NULL) free( param->dat_skill_rix );
+    if( param->Cslices>0 ) {
+        free( param->Cw );
+        free( param->Ccenters );
+    }
     
     // not null skills
     for(NDAT kg=0;kg<param->nSeq; kg++) {
@@ -523,14 +636,9 @@ void RecycleFitData(NCAT xndat, struct data** x_data, struct param *param) {
 
 // penalties
 
-// uniform
-NUMBER L2penalty(param* param, NUMBER w) {
-    NUMBER penalty_offset = 0.5;
-    return (param->C != 0)? 0.5*param->C*fabs((w-penalty_offset)) : 0;
+// pre-specified
+NUMBER L2penalty(NUMBER C, NUMBER w, NUMBER Ccenter) {
+    return 0.5*C*fabs((w-Ccenter));
 }
 
-// pre-specified
-NUMBER L2penalty(param* param, NUMBER w, NUMBER penalty_offset) {
-    return (param->C != 0)? 0.5*param->C*fabs((w-penalty_offset)) : 0;
-}
 
