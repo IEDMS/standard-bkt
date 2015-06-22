@@ -1,7 +1,6 @@
-*.xcodeproj
-boost/**/*
 DerivedData/**/*
 inputconvert
 trainhmm
 predicthmm
+boost/**/*
 papers/*
