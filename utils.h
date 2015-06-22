@@ -41,6 +41,8 @@
 #include "StripedArray.h"
 #include <time.h>
 
+//#include <omp.h> //PAR
+
 using namespace std;
 
 #ifndef _UTILS_H
@@ -65,8 +67,8 @@ using namespace std;
 
 
 typedef signed char NPAR; // number of observations or states, now 128 max, KEEP THIS SIGNED, we need -1 code for NULL
-typedef signed int NCAT;  // number of categories, groups or skills, now 32K max; LEAVE THIS UNSIGNED, we need -1 code for NULL
-typedef signed int NDAT;  // number of data rows, now 4 bill max
+typedef signed int NCAT;  // number of categories, groups or skills, now 2bil max; LEAVE THIS UNSIGNED, we need -1 code for NULL
+typedef signed int NDAT;  // number of data rows, now 2 bill max
 typedef double NUMBER;    // numeric float format
 const NUMBER pi = 3.141592653589793;
 
@@ -127,20 +129,25 @@ struct param {
 	NUMBER *param_lo;
 	NUMBER *param_hi;
 	NUMBER tol;  // tolerance of termination criterion (0.0001 by default)
+    NPAR tol_mode; // tolerance mode: by prameter change, or by loglikelihood change
     NPAR scaled;
     NPAR do_not_check_constraints;
+    NPAR duplicate_console; // output to file in addition to putputting to console
 	int maxiter; // maximum iterations (200 by default)
 	NPAR quiet;   // quiet mode (no outputs)
 	NPAR single_skill; // 0 - do nothing, 1 - fit all skills as skingle skill, to set a starting point, 2 - enforce fit single skill
 	NPAR structure; // whether to fit by skill, by group, or mixture of them
 	NPAR solver; // whether to first fit all skills as skingle skill, to set a starting point
 	NPAR solver_setting; // to be used by individual solver
-    NPAR Cslices; // 0 - do not use L2 norm penalty, >0 - number of "slices" (e.g. 1 - for by skill, 2 - for by skill and by group/user)
+	NPAR parallel;   // parallelization flag
+    NPAR    Cslices; // 0 - do not use L2 norm penalty, >0 - number of "slices" (e.g. 1 - for by skill, 2 - for by skill and by group/user)
     NUMBER* Cw;// weight of the L2 norm penalty, for skill or group parameters (or however many there might be)
     NUMBER* Ccenters;// center values for L2 penalties
 	int metrics;   // compute AIC, BIC, RMSE of training
 	int metrics_target_obs;   // target observation for RMSE of training
     int predictions; // report predictions on training data
+    char update_known; // controls how update of the probabilities of the states is done when the observations are known
+    char update_unknown; // controls how update of the probabilities of the states is done when the observations are not known
     int binaryinput; // input file is in binary format
     char initfile[1024]; // flag if we are using a model file as input
 	NPAR cv_folds; // cross-validation folds
@@ -199,7 +206,8 @@ struct param {
 	NUMBER ArmijoReduceFactor;		// Reduction to the step if rule is not satisfied
 	NUMBER ArmijoSeed;				// Seed step
 	NUMBER ArmijoMinStep;			// Minimum step to consider before abandoing reducing it
-    NPAR block_fitting[3]; // array of flags to block PI, A, B in this
+    NPAR block_fitting_type; // 0 - none, 1 - by PI, A, B - three flags, 2 - individual parameter, nS*(nS+1+nO)
+    NPAR block_fitting[3]; // array of flags to block PI, A, B in this order - TODO, enable diff block types
 };
 
 void destroy_input_data(struct param *param);

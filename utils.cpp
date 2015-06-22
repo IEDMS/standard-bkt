@@ -412,8 +412,11 @@ void zeroLabels(NCAT xdat, struct data** x_data) { // set counts in data sequenc
 void set_param_defaults(struct param *param) {
     param->item_complexity = NULL;
 	// configurable - set
-	param->tol                   = 0.01;
+    param->tol                   = 0.01;
+    param->tol_mode              = 'p';
 	param->scaled                = 0;
+    param->do_not_check_constraints = 0;
+    param->duplicate_console     = 0;
 	param->maxiter               = 200;
 	param->quiet                 = 0;
 	param->single_skill          = 0;
@@ -423,6 +426,8 @@ void set_param_defaults(struct param *param) {
     param->metrics               = 0;
     param->metrics_target_obs    = 0;
     param->predictions           = 0;
+    param->update_known          = 'r';
+    param->update_unknown        = 't';
     param->binaryinput           = 0;
 	param->Cw                     = Calloc(NUMBER, (size_t)1);
     param->Cw[0]                  = 0;
@@ -446,6 +451,12 @@ void set_param_defaults(struct param *param) {
     param->cv_folds_file[0] = 0; // empty folds file
     param->cv_inout_flag = 'o'; // default rule, we're writing folds out
     param->multiskill = 0; // single skill per ovservation by default
+    param->parallel = 0; // parallelization flag, no parallelization (0) by default
+    // parse running settings
+    param->init_reset = false; // init parameters specified
+    param->lo_lims_specd = false; // parameter limits s`pecified
+    param->hi_lims_specd = false; // parameter limits s`pecified
+    param->stat_specd_gt2 = false; // number of states specified to be >2
     // vocabilaries
     param->map_group_fwd = NULL;
     param->map_group_bwd = NULL;
@@ -479,7 +490,8 @@ void set_param_defaults(struct param *param) {
 	param->ArmijoReduceFactor  = 2;//1/0.9;//
 	param->ArmijoSeed          = 0.5; //1; - since we use smooth stepping 1 is the only thing we need
     param->ArmijoMinStep       = 0.001; //  0.000001~20steps, 0.001~10steps
-    // temporary experimental;
+    // block fitting of some parameters
+    param->block_fitting_type = 0; // no bocking of fitting - TODO, enable diff block types
     param->block_fitting[0] = 0; // no bocking fitting for PI
     param->block_fitting[1] = 0; // no bocking fitting for A
     param->block_fitting[2] = 0; // no bocking fitting for B

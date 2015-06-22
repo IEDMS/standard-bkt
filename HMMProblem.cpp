@@ -353,6 +353,8 @@ NUMBER HMMProblem::getSumLogPOPara(NCAT xndat, struct data** x_data) {
 
 void HMMProblem::initAlpha(NCAT xndat, struct data** x_data) {
 	NPAR nS = this->p->nS;
+//    int parallel_now = this->p->parallel==2; //PAR
+//    #pragma omp parallel for schedule(dynamic) if(parallel_now) //PAR
 	for(NCAT x=0; x<xndat; x++) {
         NDAT t;
         NPAR i;
@@ -383,6 +385,8 @@ void HMMProblem::initAlpha(NCAT xndat, struct data** x_data) {
 
 void HMMProblem::initXiGamma(NCAT xndat, struct data** x_data) {
     NPAR nS = this->p->nS;
+//    int parallel_now = this->p->parallel==2; //PAR
+//    #pragma omp parallel for schedule(dynamic) if(parallel_now) //PAR
 	for(NCAT x=0; x<xndat; x++) {
         NDAT t;
         NPAR i, j;
@@ -418,6 +422,8 @@ void HMMProblem::initXiGamma(NCAT xndat, struct data** x_data) {
 
 void HMMProblem::initBeta(NCAT xndat, struct data** x_data) {
 	NPAR nS = this->p->nS;
+//    int parallel_now = this->p->parallel==2; //PAR
+//    #pragma omp parallel for schedule(dynamic) if(parallel_now) //PAR
 	for(NCAT x=0; x<xndat; x++) {
         NDAT t;
         NPAR i;
@@ -441,6 +447,8 @@ NDAT HMMProblem::computeAlphaAndPOParam(NCAT xndat, struct data** x_data) {
 	initAlpha(xndat, x_data);
     NPAR nS = this->p->nS;
     NDAT  ndat = 0;
+//    int parallel_now = this->p->parallel==2; //PAR
+//    #pragma omp parallel for schedule(dynamic) if(parallel_now) reduction(+:ndat) //PAR
 	for(NCAT x=0; x<xndat; x++) {
         NDAT t;
         NPAR i, j, o;
@@ -487,6 +495,8 @@ NDAT HMMProblem::computeAlphaAndPOParam(NCAT xndat, struct data** x_data) {
 void HMMProblem::computeBeta(NCAT xndat, struct data** x_data) {
 	initBeta(xndat, x_data);
     NPAR nS = this->p->nS;
+//    int parallel_now = this->p->parallel==2; //PAR
+//    #pragma omp parallel for schedule(dynamic) if(parallel_now) //PAR
 	for(NCAT x=0; x<xndat; x++) {
         int t;
         NPAR i, j, o;
@@ -514,6 +524,8 @@ void HMMProblem::computeBeta(NCAT xndat, struct data** x_data) {
 void HMMProblem::computeXiGamma(NCAT xndat, struct data** x_data){
 	HMMProblem::initXiGamma(xndat, x_data);
     NPAR nS = this->p->nS;
+//    int parallel_now = this->p->parallel==2; //PAR
+//    #pragma omp parallel for schedule(dynamic) if(parallel_now) //PAR
 	for(NCAT x=0; x<xndat; x++) {
         NDAT t;
         NPAR i, j, o_tp1;
@@ -728,8 +740,10 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
 	NCAT g, k;
 	NPAR i, j, m, o, isTarget = 0;
     NPAR nS = this->p->nS, nO = this->p->nO; NCAT nK = this->p->nK, nG = this->p->nG;
-	NUMBER *local_pred = init1D<NUMBER>(nO); // local prediction
-	NUMBER *pLe = init1D<NUMBER>(nS);// p(L|evidence);
+	NUMBER *local_pred = init1D<NUMBER>(nO); // local prediction//SEQ
+	NUMBER *pLe = init1D<NUMBER>(nS);// p(L|evidence);//SEQ
+//    NUMBER *local_pred = NULL; // local prediction//PAR
+//    NUMBER *pLe = NULL;// p(L|evidence);//PAR
 	NUMBER pLe_denom; // p(L|evidence) denominator
     NUMBER ***group_skill_map = init3D<NUMBER>(nG, nK, nS);
     
@@ -750,7 +764,8 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
     }
     
 	// initialize
-    struct data* dt = new data;
+    struct data* dt = new data;//SEQ
+//    struct data* dt = NULL;//PAR
     NDAT count = 0;
     NDAT d = 0;
     NUMBER *var = NULL, v;
@@ -759,8 +774,13 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
     NDAT ix = 0;
     
     int threads = 1; // should be 1 here
-    printf("threads for printing %i\n",threads);
-
+//    int parallel_now = this->p->parallel==1; //PAR
+//    #pragma omp parallel if(parallel_now)//num_threads(2)//PAR
+//    {//PAR
+//    threads = omp_get_num_threads();//PAR
+//    }//#omp//PAR
+//    printf("threads for printing %i\n",threads);
+//
     NDAT *starts;
     starts = (NDAT*)malloc((size_t)(threads+1)*sizeof(NDAT));
     starts[0]=0;
@@ -768,13 +788,26 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
     for(int i=1; i<threads; i++) {
         starts[i] = (NDAT)i * this->p->N / (NDAT)threads;
     }
-    
+
+//    #pragma omp parallel if(parallel_now) private(i,j,m,t,d,dt,var,v,o,g,k,ar,ix,n,isTarget,pLe_denom,pLe,local_pred) shared(group_skill_map,nS,nO,nK,nG,starts,threads,dat_predict,dat_known,dat_known_stacked) // num_threads(2)//PAR
+    //
+//    {//PAR
+//    #pragma omp for schedule(dynamic) reduction(+:rmse,rmse_no_null,accuracy,accuracy_no_null,ll,ll_no_null) //PAR
     for(int trd=0; trd<threads; trd++) { // all thread buckets
+//        var = NULL;//PAR
+//        dt = new data;//PAR
+//        local_pred = init1D<NUMBER>(nO); // local prediction//PAR
+//        pLe = init1D<NUMBER>(nS);// p(L|evidence);//PAR
+    
+//    for(t=0; t<this->p->N; t++) {
     for(t=starts[trd]; t<starts[trd+1]; t++) {
-        // peek into the data, not for predict, for update only
+        // we are setting it to the actual prediction (could be unknown), but
+        // we might end up not using it later
 		o = dat_obs[t];//[t];
-		g = dat_group[t];//[
+        
+		g = dat_group[t];//
         dt->g = g;
+        
         isTarget = this->p->metrics_target_obs == o;
         
         if(this->p->multiskill==0) {
@@ -796,6 +829,7 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
             n = dat_skill_rcount[t];
         }
         
+        // deal with null skill
         if(ar[0]<0) { // if no skill label
             
             isTarget = this->null_skill_obs==o;
@@ -803,7 +837,7 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
             accuracy += isTarget == (this->null_skill_obs_prob>=0.5);
             ll += - (  isTarget*safelog(this->null_skill_obs_prob) + (1-isTarget)*safelog(1 - this->null_skill_obs_prob)  );
 
-            if(this->p->predictions>0 /*&& output_this*/) // write predictions file if it was opened
+            if(this->p->predictions>0) // write predictions file if it was opened
                 for(m=0; m<nO; m++) {
                     d = (NDAT)m*this->p->N + t; // save all obs 1 first, then obs 2, then on.
                     dat_predict[d] = this->null_obs_ratio[m];
@@ -825,25 +859,26 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
         // produce prediction and copy to result
         producePCorrect(group_skill_map, local_pred, ar, n, dt); //UNBOOST
         projectsimplex(local_pred, nO); // addition to make sure there's not side effects
-        
-        // guess the obsevaion using Pi and B
-        NUMBER max_local_pred=0;
-        NPAR ix_local_pred=0;
-        for(m=0; m<nO; m++) {
-            if( local_pred[m]>max_local_pred ) {
-                max_local_pred = local_pred[m];
-                ix_local_pred = m;
+
+        // if necessary guess the obsevaion using Pi and B
+        if(this->p->update_known=='g') {
+            NUMBER max_local_pred=0;
+            NPAR ix_local_pred=0;
+            for(m=0; m<nO; m++) {
+                if( local_pred[m]>max_local_pred ) {
+                    max_local_pred = local_pred[m];
+                    ix_local_pred = m;
+                }
             }
+            o = ix_local_pred;
         }
-        o = ix_local_pred;
-        
+
         // update pL
         for(int l=0; l<n; l++) {
             k = ar[l];
             dt->k = k;
-            
-            
-            if(o>-1) { // known observations //
+            // known observation (both if 'reveal' or 'guess'), or uknown and 'guess' anyway
+            if(o>-1 || this->p->update_unknown=='g') {
                 // update p(L)
                 pLe_denom = 0.0;
                 // 1. pLe =  (L .* B(:,o)) ./ ( L'*B(:,o)+1e-8 );
@@ -871,8 +906,8 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
             }// observations
             projectsimplex(group_skill_map[g][k], nS); // addition to make sure there's not side effects // UNBOOST
         }
-        // write prediction out (after update)
-        if(this->p->predictions>0/* && output_this*/) { // write predictions file if it was opened
+        // write prediction out (after update)  
+        if(this->p->predictions>0) { // write predictions file if it was opened
             for(m=0; m<nO; m++) {
                 d = (NDAT)m*this->p->N + t; // save all obs 1 first, then obs 2, then on.
                 dat_predict[d] = local_pred[m];//this->null_obs_ratio[m];
@@ -890,14 +925,22 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
         p = safe01num(local_pred[this->p->metrics_target_obs]);
         ll += - (  safelog(  p)*   isTarget  +  safelog(1-p)*(1-isTarget)  );
         ll_no_null += - (  safelog(  p)*   isTarget  +  safelog(1-p)*(1-isTarget)  );
-	} // for all data
-
-    } // end of -- all thread buckets
-    printf(" rmse was %f\n",rmse);
+    } // for all data
     
-    delete(dt);
-	free(local_pred);
-	free(pLe);
+//        delete(dt);//PAR
+//        free(local_pred);//PAR
+//        free(pLe);//PAR
+        
+    } // end of -- all thread buckets
+//    }//#omp //PAR
+//    printf(" rmse was %f\n",rmse);
+
+
+    delete(dt);//SEQ
+	free(local_pred);//SEQ
+	free(pLe);//SEQ
+//	free(local_pred_inner);
+    free3D<NUMBER>(group_skill_map, nG, nK); 
     
     rmse = sqrt(rmse / this->p->N);
     rmse_no_null = sqrt(rmse_no_null / (this->p->N - this->p->N_null));
@@ -909,7 +952,7 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
         metrics[4] = accuracy/this->p->N;
         metrics[5] = accuracy_no_null/(this->p->N-this->p->N_null);
     }
-    printf("writing predictions\n");
+
     if(this->p->predictions>0) { // close predictions file if it was opened
         ofstream fout(filename,ios::out);
         char str[1024];
@@ -918,6 +961,7 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
             fprintf(stderr,"Can't write output model file %s\n",filename);
             exit(1);
         }
+        
         for(NDAT t=0; t<this->p->N; t++) {
             for(m=0; m<nO; m++) {
                 d = (NDAT)m*this->p->N + t;
@@ -1145,7 +1189,7 @@ NUMBER HMMProblem::GradientDescent() {
 	if(this->p->single_skill>0) {
         FitResult fr;
         fr.pO = 0;
-        FitBit *fb = new FitBit(this->p->nS, this->p->nO, this->p->nK, this->p->nG, this->p->tol);
+        FitBit *fb = new FitBit(this->p->nS, this->p->nO, this->p->nK, this->p->nG, this->p->tol, this->p->tol_mode);
         // link accordingly
         fb->link( this->getPI(0), this->getA(0), this->getB(0), this->p->nSeq, this->p->k_data);// link skill 0 (we'll copy fit parameters to others
         if(this->p->block_fitting[0]!=0) fb->pi = NULL;
@@ -1179,13 +1223,17 @@ NUMBER HMMProblem::GradientDescent() {
                 cpy3Params(fb->pi, fb->A, fb->B, aPI, aA, aB, this->p->nS, this->p->nO);
             }
         }// force single skill
-        delete fb;//PAR
+        delete fb;
 	}
 	//
 	// Main fit
 	//
+//    int parallel_now = this->p->parallel==1; //PAR
+//    #pragma omp parallel if(parallel_now) //num_threads(2)//PAR
+//    {//PAR
 //    printf("thread %i|%i\n",omp_get_thread_num(),omp_get_num_threads());//undoPAR
     if(this->p->single_skill!=2){
+//        #pragma omp for schedule(dynamic) reduction(+:loglik) //PAR
         for(x=0; x<nX; x++) { // if not "force single skill" too
             NCAT xndat;
             struct data** x_data;
@@ -1199,7 +1247,7 @@ NUMBER HMMProblem::GradientDescent() {
                 xndat = 0;
                 x_data = NULL;
             }
-            FitBit *fb = new FitBit(this->p->nS, this->p->nO, this->p->nK, this->p->nG, this->p->tol);
+            FitBit *fb = new FitBit(this->p->nS, this->p->nO, this->p->nK, this->p->nG, this->p->tol, this->p->tol_mode);
             fb->link( this->getPI(x), this->getA(x), this->getB(x), xndat, x_data);
             if(this->p->block_fitting[0]!=0) fb->pi = NULL;
             if(this->p->block_fitting[1]!=0) fb->A  = NULL;
@@ -1245,7 +1293,7 @@ NUMBER HMMProblem::BaumWelch() {
         FitResult fr;
         fr.pO = 0;
         NCAT x;
-        FitBit *fb = new FitBit(this->p->nS, this->p->nO, this->p->nK, this->p->nG, this->p->tol);
+        FitBit *fb = new FitBit(this->p->nS, this->p->nO, this->p->nK, this->p->nG, this->p->tol, this->p->tol_mode);
         fb->link( this->getPI(0), this->getA(0), this->getB(0), this->p->nSeq, this->p->k_data);// link skill 0 (we'll copy fit parameters to others
         if(this->p->block_fitting[0]!=0) fb->pi = NULL;
         if(this->p->block_fitting[1]!=0) fb->A  = NULL;
@@ -1275,15 +1323,19 @@ NUMBER HMMProblem::BaumWelch() {
                 cpy3Params(fb->pi, fb->A, fb->B, aPI, aA, aB, this->p->nS, this->p->nO);
             }
         }// force single skill
-        delete fb;//PAR
+        delete fb;
     }
 	
 	//
 	// Main fit
 	//
     
+//    int parallel_now = this->p->parallel==1; //PAR
+//    #pragma omp parallel if(parallel_now) //num_threads(2) //PAR
+//    {//PAR
+//        #pragma omp for schedule(dynamic) reduction(+:loglik) //PAR
         for(k=0; k<this->p->nK; k++) {
-            FitBit *fb = new FitBit(this->p->nS, this->p->nO, this->p->nK, this->p->nG, this->p->tol);
+            FitBit *fb = new FitBit(this->p->nS, this->p->nO, this->p->nK, this->p->nG, this->p->tol, this->p->tol_mode);
             fb->link(this->getPI(k), this->getA(k), this->getB(k), this->p->k_numg[k], this->p->k_g_data[k]);
             if(this->p->block_fitting[0]!=0) fb->pi = NULL;
             if(this->p->block_fitting[1]!=0) fb->A  = NULL;
@@ -1302,7 +1354,7 @@ NUMBER HMMProblem::BaumWelch() {
                     printf("skill %4d, seq %4d, dat %8d, iter#%3d p(O|param)= %15.7f >> %15.7f, conv=%d\n", k,  this->p->k_numg[k], fr.ndat, fr.iter,fr.pO0,fr.pO,fr.conv);
             }
         } // for all skills
-
+//    }//PAR
     return loglik;
 }
 
@@ -1316,10 +1368,10 @@ FitResult HMMProblem::BaumWelchBit(FitBit *fb) {
     NCAT xndat = fb->xndat;
     struct data **x_data = fb->x_data;
     
+    fr.ndat = -1; // no accounting so far
     while( !fr.conv && fr.iter<=this->p->maxiter ) {
-        fr.ndat = -1; // no accounting so far
         if(fr.iter==1) {
-            computeAlphaAndPOParam(xndat, x_data);
+            fr.ndat = computeAlphaAndPOParam(xndat, x_data);
             fr.pO0 = HMMProblem::getSumLogPOPara(xndat, x_data);
             fr.pOmid = fr.pO0;
         }

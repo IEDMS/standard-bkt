@@ -157,6 +157,21 @@ void exit_with_help() {
            "-b : treat input file as binary input file (specifications TBA).\n"
            "-p : report model predictions on the train set 0-no (default), 1-yes; 2-yes,\n"
            "     plus output state probability; works with -v and -m parameters.\n"
+           "-U : controls how update to the probability distribution of the states is\n"
+           "     updated. Takes the following format '-U r|g[,t|g]', where first\n"
+           "     character controls how prediction treats known observations, second -- how\n"
+           "     prediction treats unknown observations, and third -- whether to output\n"
+           "     probabilities of priors. Dealing with known observations 'r' - reveal\n"
+           "     actual observations for the update of state probability distribution (makes\n"
+           "     sense for modeling how an actual system would work), 'g' - 'guessing' the\n"
+           "     observation based on the predicted outcomes (arg max) -- more appropriate\n"
+           "     when comparing models (so that no information about observation is never\n"
+           "     revealed). Dealing with unknown observations (marked as '.' -- dot): 't' --\n"
+           "     use transition matrix only, 'g' -- 'guess' the observation.\n"
+           "     Default (if ommitted) is '-U r,t'.\n"
+           "     For examle, '-U g,g would require 'guessing' of what the observation was\n"
+           "     using model parameters and the running value of the probabilities of state\n"
+           "     distributions.\n"
 		   );
 	exit(1);
 }
@@ -165,7 +180,7 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *model_f
 	// parse command line options, starting from 1 (0 is path to executable)
 	// go in pairs, looking at whether first in pair starts with '-', if not, stop parsing arguments
 	int i;
-//    char * ch;
+    char * ch;
 	for(i=1;i<argc;i++)
 	{
 		if(argv[i][0] != '-') break; // end of options stop parsing
@@ -192,6 +207,17 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *model_f
 					fprintf(stderr,"a flag of whether to report predictions for training data (-p) should be 0, 1 or 2\n");
 					exit_with_help();
 				}
+                break;
+            case  'U':
+                param.update_known = *strtok(argv[i],",\t\n\r");
+                ch = strtok(NULL, ",\t\n\r");
+                param.update_unknown = ch[0];
+                
+                if( (param.update_known!='r' && param.update_known!='g') ||
+                   (param.update_unknown!='t' && param.update_unknown!='g') ) {
+                    fprintf(stderr,"specification of how probabilities of states should be updated (-U) is incorrect, it sould be r|g[,t|g] \n");
+                    exit_with_help();
+                }
                 break;
 			default:
 				fprintf(stderr,"unknown option: -%c\n", argv[i-1][1]);
@@ -226,94 +252,3 @@ void parse_arguments(int argc, char **argv, char *input_file_name, char *model_f
         }
 	}
 }
-
-void predict(const char *predict_file, HMMProblem *hmm) {
-	FILE *fid = fopen(predict_file,"w");
-	if(fid == NULL)
-	{
-		fprintf(stderr,"Can't open prediction output file %s\n",predict_file);
-		exit(1);
-	}
-
-	NDAT t;
-	NCAT g, k;
-	NPAR i, j, m, o;
-	NUMBER *local_pred = init1D<NUMBER>(param.nO); // local prediction
-	NUMBER pLe[param.nS];// p(L|evidence);
-	NUMBER pLe_denom; // p(L|evidence) denominator
-	NUMBER ***group_skill_map = init3D<NUMBER>(param.nG, param.nK, param.nS);
-    NCAT *ar;
-    int n;
- 	// initialize
-    struct data dt;
-	for(g=0; g<param.nG; g++)
-		for(k=0; k<param.nK; k++) {
-			for(i=0; i<param.nO; i++) {
-                dt.g = g;
-                dt.k = k;
-                group_skill_map[g][k][i] = hmm->getPI(&dt,i);
-            }
-
-		}
-	NDAT predict_idx = 0;
-
-	for(t=0; t<param.N; t++) {
-        o = param.dat_obs[t];
-        if(param.multiskill==0) {
-            k = param.dat_skill[t];
-            ar = &k;
-            n = 1;
-        } else {
-            ar = &param.dat_skill_stacked[ param.dat_skill_rix[t] ];
-            n = param.dat_skill_rcount[t];
-        }
-        g = param.dat_group[t];
-        dt.g = g;
-
-		// produce prediction and copy to result
-		if(k<0) { // if no skill label
-			//for(m=0; m<param.nO; m++)
-			//	result[t][m] = param.null_obs_ratio[m];
-			if(o==-1 || param.predictions) {// if output
-				for(m=0; m<param.nO; m++)
-					fprintf(fid,"%12.10f%s",hmm->getNullSkillObs(m),(m<(param.nO-1))?"\t":"\n");
-				predict_idx++;
-			}
-			continue;
-		}
-        // produce prediction and copy to result
-        hmm->producePCorrect(group_skill_map, local_pred, ar, n, &dt);
-        for(int l=0; l<n; l++) {
-            k = ar[l];
-            dt.k = k;
-
-            if(o>-1) { // known observations
-                // update p(L)
-                pLe_denom = 0.0;
-                // 1. pLe =  (L .* B(:,o)) ./ ( L'*B(:,o));
-                for(i=0; i<param.nS; i++) pLe_denom += group_skill_map[g][k][i] * hmm->getB(&dt,i,o);
-                for(i=0; i<param.nS; i++) pLe[i] = group_skill_map[g][k][i] * hmm->getB(&dt,i,o) / safe0num(pLe_denom);
-                // 2. L = (pLe'*A)';
-                for(i=0; i<param.nS; i++) group_skill_map[g][k][i] = 0.0;
-                for(j=0; j<param.nS; j++)
-                    for(i=0; i<param.nS; i++)
-                        group_skill_map[g][k][j] += pLe[i] * hmm->getA(&dt,i,j);//A[i][j];
-            } else { // unknown observation
-                // 2. L = (pL'*A)';
-                for(i=0; i<param.nS; i++) pLe[i] = group_skill_map[g][k][i]; // copy first;
-                for(i=0; i<param.nS; i++) group_skill_map[g][k][i] = 0.0; // erase old value
-                for(j=0; j<param.nS; j++)
-                    for(i=0; i<param.nS; i++)
-                        group_skill_map[g][k][j] += pLe[i] * hmm->getA(&dt,i,j);
-            }// observations
-            if(param.predictions>0 || o==-1) { // write predictions file if it was opened
-                for(m=0; m<param.nO; m++)
-                    fprintf(fid,"%12.10f%s",local_pred[m],(m<(param.nO-1))?"\t":"\n");
-            }
-        }// for all subskills
-	} // for all data
-	free(line);
-	free(local_pred);
-	fclose(fid);
-}
-

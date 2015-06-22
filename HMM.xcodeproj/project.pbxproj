@@ -44,6 +44,8 @@
 		71A39CA9179DB04F000F9610 /* inputconvert */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = inputconvert; sourceTree = BUILT_PRODUCTS_DIR; };
 		71AF7DF4176F6C3F000C7E96 /* trainhmm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = trainhmm; sourceTree = BUILT_PRODUCTS_DIR; };
 		71B056FD17A29AAC007D146C /* readme.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = readme.txt; sourceTree = "<group>"; };
+		71C72ED71B388391004124A8 /* par2seq.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = par2seq.sh; sourceTree = "<group>"; };
+		71C72ED81B388391004124A8 /* seq2par.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = seq2par.sh; sourceTree = "<group>"; };
 		71D234A417540A7C006985EB /* HMMProblem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HMMProblem.cpp; sourceTree = "<group>"; };
 		71D234A617540A80006985EB /* HMMProblem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMMProblem.h; sourceTree = "<group>"; };
 		71D234A717540AB6006985EB /* trainhmm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = trainhmm.cpp; sourceTree = "<group>"; };
@@ -92,6 +94,8 @@
 				71B056FD17A29AAC007D146C /* readme.txt */,
 				715BD81017AB35E700C9B6D3 /* toy_data.txt */,
 				715BD82117B0118000C9B6D3 /* toy_data_test.txt */,
+				71C72ED71B388391004124A8 /* par2seq.sh */,
+				71C72ED81B388391004124A8 /* seq2par.sh */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,

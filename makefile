@@ -1,13 +1,16 @@
-CC=g++ #
-CXX=g++ #
-CFLAGS = -Wall -Wconversion -O3 -fPIC
+CC=g++
+CXX=g++
+CFLAGS = -Wall -Wconversion -O3 -fPIC -fopenmp
 SHVER = 1
 OS = $(shell uname)
 
-all: train predict input tidy
+#LIBS = blas/blas.a
+#LIBS = -lblas
+
+all: train predict input 
 
 train: utils.o StripedArray.o FitBit.o HMMProblem.o InputUtil.o trainhmm.cpp
-	$(CXX) $(CFLAGS) -o trainhmm trainhmm.cpp utils.o FitBit.o InputUtil.o HMMProblem.o StripedArray.o
+	$(CXX) $(CFLAGS) -o trainhmm trainhmm.cpp utils.o FitBit.o FitBitSlicedA.o FitBitSlicedAB.o InputUtil.o HMMProblem.o HMMProblemPiGK.o HMMProblemPiGKww.o HMMProblemAGK.o HMMProblemPiAGK.o HMMProblemPiABGK.o HMMProblemSlicedAB.o HMMProblemSlicedA.o StripedArray.o
 
 predict: utils.o StripedArray.o FitBit.o HMMProblem.o InputUtil.o predicthmm.cpp
 	$(CXX) $(CFLAGS) -o predicthmm predicthmm.cpp utils.o FitBit.o InputUtil.o HMMProblem.o StripedArray.o
@@ -28,7 +31,7 @@ FitBit.o: FitBit.cpp FitBit.h
 	$(CXX) $(CFLAGS) -c -o FitBit.o FitBit.cpp
 
 HMMProblem.o: HMMProblem.cpp HMMProblem.h
-	$(CXX) $(CFLAGS) -c -o HMMProblem.o HMMProblem.cpp
+	$(CXX) $(CFLAGS) -c -o HMMProblem.o HMMProblem.cpp 
 
 clean:
 	rm -f *.o trainhmm predicthmm inputconvert
