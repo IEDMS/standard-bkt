@@ -10,7 +10,7 @@ OS = $(shell uname)
 all: train predict input 
 
 train: utils.o StripedArray.o FitBit.o HMMProblem.o InputUtil.o trainhmm.cpp
-	$(CXX) $(CFLAGS) -o trainhmm trainhmm.cpp utils.o FitBit.o FitBitSlicedA.o FitBitSlicedAB.o InputUtil.o HMMProblem.o HMMProblemPiGK.o HMMProblemPiGKww.o HMMProblemAGK.o HMMProblemPiAGK.o HMMProblemPiABGK.o HMMProblemSlicedAB.o HMMProblemSlicedA.o StripedArray.o
+	$(CXX) $(CFLAGS) -o trainhmm trainhmm.cpp utils.o FitBit.o InputUtil.o HMMProblem.o StripedArray.o
 
 predict: utils.o StripedArray.o FitBit.o HMMProblem.o InputUtil.o predicthmm.cpp
 	$(CXX) $(CFLAGS) -o predicthmm predicthmm.cpp utils.o FitBit.o InputUtil.o HMMProblem.o StripedArray.o

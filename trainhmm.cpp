@@ -52,6 +52,9 @@ bool read_and_structure_data(const char *filename, FILE *fid_console);
 void cross_validate(NUMBER* metrics, const char *filename, const char *model_file_name, clock_t *tm_fit, clock_t *tm_predict, FILE *fid_console);//SEQ
 void cross_validate_item(NUMBER* metrics, const char *filename, const char *model_file_name, clock_t *tm_fit, clock_t *tm_predict, FILE *fid_console);//SEQ
 void cross_validate_nstrat(NUMBER* metrics, const char *filename, const char *model_file_name, clock_t *tm_fit, clock_t *tm_predict, FILE *fid_console);//SEQ
+//void cross_validate(NUMBER* metrics, const char *filename, const char *model_file_name, double *tm_fit, double *tm_predict, FILE *fid_console);//PAR
+//void cross_validate_item(NUMBER* metrics, const char *filename, const char *model_file_name, double *tm_fit, double *tm_predict, FILE *fid_console);//PAR
+//void cross_validate_nstrat(NUMBER* metrics, const char *filename, const char *model_file_name, double *tm_fit, double *tm_predict, FILE *fid_console);//PAR
 
 static int max_line_length;
 static char * line;
@@ -75,7 +78,9 @@ static char* readline(FILE *fid) {
 int main (int argc, char ** argv) {
     
 	clock_t tm_all = clock();//overall time //SEQ
-	char input_file[1024]; // data
+//    double _tm_all = omp_get_wtime(); //PAR
+
+    char input_file[1024]; // data
 	char output_file[1024]; // model
     char colsole_file[1024]; // console copy
 	char predict_file[1024]; // predictions
@@ -112,8 +117,8 @@ int main (int argc, char ** argv) {
     
     
     if(!param.quiet) {
-        printf("input read, nO=%d, nG=%d, nK=%d, nI=%d\n",param.nO, param.nG, param.nK, param.nI, param.nZ);
-        if(param.duplicate_console==1) fprintf(fid_console, "input read, nO=%d, nG=%d, nK=%d, nI=%d, nZ=%d\n",param.nO, param.nG, param.nK, param.nI);
+        printf("input read, nO=%d, nG=%d, nK=%d, nI=%d\n",param.nO, param.nG, param.nK, param.nI);
+        if(param.duplicate_console==1) fprintf(fid_console, "input read, nO=%d, nG=%d, nK=%d, nI=%d\n",param.nO, param.nG, param.nK, param.nI);
     }
     
     // erase blocking labels

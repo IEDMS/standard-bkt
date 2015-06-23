@@ -1276,7 +1276,8 @@ NUMBER HMMProblem::GradientDescent() {
             }
         } // for all skills
     }// if not force single skill
-    
+//    }//#omp //PAR
+ 
     return loglik;
 }
 
