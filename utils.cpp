@@ -471,7 +471,8 @@ void set_param_defaults(struct param *param) {
 	param->nO = 0;
 	param->nG = 0;
 	param->nK = 0;
-	param->nI = 0;
+    param->nI = 0;
+    param->nZ = 1;
 	// data
     param->all_data = NULL;
     param->nSeq = 0;
