@@ -187,10 +187,15 @@ void projectsimplexbounded(NUMBER* ar, NUMBER *lb, NUMBER *ub, NPAR size) {
 	NPAR i, num_at_hi, num_at_lo; // number of elements at lower,upper boundary
 	NPAR *at_hi = Calloc(NPAR, (size_t)size);
 	NPAR *at_lo = Calloc(NPAR, (size_t)size);
-	NUMBER err, lambda;
+	NUMBER err, lambda, v;
     NUMBER* ar_copy = Calloc(NUMBER, (size_t)size);
     memcpy(ar_copy, ar, (size_t)size);
     int iter = 0;
+    for(i=0; i<size; i++)
+        if(ar[i]!=ar[i]) {
+            fprintf(stderr,"WARNING! NaN detected!\n");
+        }
+    
 	while( !issimplexbounded(ar, lb, ub, size) ) {
         lambda = 0;
 		num_at_hi = 0;
@@ -199,10 +204,22 @@ void projectsimplexbounded(NUMBER* ar, NUMBER *lb, NUMBER *ub, NPAR size) {
 		// threshold
 		for(i=0; i<size; i++) {
 			at_lo[i] = (ar[i]<=lb[i])?1:0;
-			ar[i] = (at_lo[i]==1)?lb[i]:ar[i];
+            
+            v = (at_lo[i]==1)?lb[i]:ar[i];
+            if(v!=v) {
+                fprintf(stderr,"WARNING! NaN to be set!\n");
+            }
+			
+            ar[i] = (at_lo[i]==1)?lb[i]:ar[i];
 			num_at_lo = (NPAR)( num_at_lo + at_lo[i] );
 			
 			at_hi[i] = (ar[i]>=ub[i])?1:0;
+            
+            v = (at_hi[i]==1)?ub[i]:ar[i];
+            if(v!=v) {
+                fprintf(stderr,"WARNING! NaN to be set!\n");
+            }
+            
 			ar[i] = (at_hi[i]==1)?ub[i]:ar[i];
 			num_at_hi = (NPAR)( num_at_hi + at_hi[i] );
 			
@@ -226,13 +243,31 @@ void projectsimplexbounded(NUMBER* ar, NUMBER *lb, NUMBER *ub, NPAR size) {
         
         if( will_suffer_from_lambda == 0 ) {
             for(i=0; i<size; i++) {
+
+                v = ar[i] - ((at_lo[i]==0 && err>0)?lambda:0);
+                if(v!=v) {
+                    fprintf(stderr,"WARNING! NaN to be set!\n");
+                }
+
                 ar[i] -= (at_lo[i]==0 && err>0)?lambda:0;
+
+                v = ar[i] - ((at_hi[i]==0 && err<0)?lambda:0);
+                if(v!=v) {
+                    fprintf(stderr,"WARNING! NaN to be set!\n");
+                }
+
                 ar[i] -= (at_hi[i]==0 && err<0)?lambda:0;
             }
         } else {
             lambda2 = (err-err2) / ( size - (num_at_hi + num_at_lo) - will_suffer_from_lambda );
             for(i=0; i<size; i++) {
                 if( at_lo[i]==0 && at_hi[i]==0 ) {
+
+                    v = (ar[i]<lambda)?0:(ar[i]-lambda2);
+                    if(v!=v) {
+                        fprintf(stderr,"WARNING! NaN to be set!\n");
+                    }
+                    
                     ar[i] = (ar[i]<lambda)?0:(ar[i]-lambda2);
                 }
             }
@@ -315,7 +350,7 @@ bool isPassesLim(NUMBER* ar, NPAR size, NUMBER *lb, NUMBER* ub) {
 // Gentle - as per max distance to go toward extreme value of 0 or 1
 NUMBER doLog10Scale1DGentle(NUMBER *grad, NUMBER *par, NPAR size) {
 	NPAR i;
-	NUMBER max_10_scale = 0, candidate, min_delta = 1, max_grad = 0;
+	NUMBER max_10_scale = 0, candidate, min_delta = 1, max_grad = 0, scale;
 	for(i=0; i<size; i++) {
 		if( fabs(grad[i]) < SAFETY ) // 0 gradient
 			continue;
@@ -332,11 +367,25 @@ NUMBER doLog10Scale1DGentle(NUMBER *grad, NUMBER *par, NPAR size) {
             min_delta = candidate;
 	}
     max_grad = max_grad / pow(10, max_10_scale);
-    if(max_10_scale > 0) {
-        for(i=0; i<size; i++)
-            grad[i] = ( 0.95 * min_delta / max_grad) * grad[i] / pow(10, max_10_scale);
+    
+    scale = (max_grad!=0) ? ( 0.95 * min_delta / max_grad ) / pow(10, max_10_scale) : 1;
+    if(scale==std::numeric_limits<double>::infinity() || scale==(-1*std::numeric_limits<double>::infinity()) ) {
+        fprintf(stderr,"WARNING! scale is Infinite\n");
     }
-    return ( 0.95 * min_delta / max_grad ) / pow(10, max_10_scale);
+    
+    NUMBER v;
+    if(max_10_scale > 0) {
+        for(i=0; i<size; i++) {
+            
+            v = ( 0.95 * min_delta / max_grad) * grad[i] / pow(10, max_10_scale);
+            if(v!=v) {
+                fprintf(stderr,"WARNING! NaN to be set!\n");
+            }
+            
+            grad[i] = ( 0.95 * min_delta / max_grad) * grad[i] / pow(10, max_10_scale);
+        }
+    }
+    return scale; //( 0.95 * min_delta / max_grad ) / pow(10, max_10_scale);
 }
 
 // Gentle - as per max distance to go toward extreme value of 0 or 1
