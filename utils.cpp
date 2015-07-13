@@ -308,6 +308,14 @@ NUMBER safelog(NUMBER val) {
 	return log(val + (val<=0)*SAFETY);
 }
 
+// max value of n
+NUMBER maxn(NUMBER *ar, NDAT n) {
+	NUMBER mx = ar[0];
+	for(NDAT i=1; i<n; i++)
+		if(ar[i]>mx) mx = ar[i];
+	return mx;
+}
+
 void add1DNumbersWeighted(NUMBER* sourse, NUMBER* target, NPAR size, NUMBER weight) {
 	for(NPAR i=0; i<size; i++)
 		target[i] = target[i] + sourse[i]*weight;
@@ -520,7 +528,7 @@ void set_param_defaults(struct param *param) {
 	param->nO = 0;
 	param->nG = 0;
 	param->nK = 0;
-    param->nI = 0;
+	param->nI = 0;
     param->nZ = 1;
 	// data
     param->all_data = NULL;
@@ -576,7 +584,10 @@ void destroy_input_data(struct param *param) {
     
     // not null skills
     for(NDAT kg=0;kg<param->nSeq; kg++) {
-        free(param->all_data[kg].ix); // was obs;
+		free(param->all_data[kg].ix); // was obs;
+		if( param->all_data[kg].ix_stacked != NULL ) free(param->all_data[kg].ix_stacked); // was obs;
+//        if(param->sliced) // handled via one global array and ix indexing
+//            free(param->all_data[kg].time);
     }
     if(param->all_data != NULL) free(param->all_data); // ndat of them
     if(param->k_data != NULL)   free(param->k_data); // ndat of them (reordered by k)
