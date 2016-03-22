@@ -1,0 +1,10 @@
+DerivedData/**/*
+inputconvert
+trainhmm
+predicthmm
+boost/**/*
+boost.zip
+papers/*
+*.o
+d/**/*
+
