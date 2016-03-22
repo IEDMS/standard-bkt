@@ -26,17 +26,15 @@ A
 |  1 |    0 |
 -----|-------    
 | pT | 1-pT |
------|-------    
 
 B
 
 | 1-pS|   pS |
 ------|-------    
 |  pG | 1-pG |
-------|-------    
 
 
-For more details on BKT refer to (Corbett & Anderson, 1995)[^1]. (Levinson et al., 1983 )[2], among other things, discusses how a gradient-based fitting of HMM can be implemented. [3][3] and [4][4] cover additional topics relevant for the implementation.
+For more details on BKT refer to [1]. [2], among other things, discusses how a gradient-based fitting of HMM can be implemented. [3, 4] cover additional topics relevant for the implementation.
 
 # Getting and Compiling the Code
 
@@ -243,14 +241,13 @@ Depending on your hardware, the model should be fit in about 1-2 minutes.
 
 # References
 
-[^1]:
-Corbett, A. T. and Anderson, J. R.: Knowledge tracing: Modeling the acquisition of procedural knowledge. User Modeling and User-Adapted Interaction, 4(4), 253-278. (1995)
+1. Corbett, A. T. and Anderson, J. R.: Knowledge tracing: Modeling the acquisition of procedural knowledge. User Modeling and User-Adapted Interaction, 4(4), 253-278. (1995)
  
-[2]: Levinson, S. E., Rabiner, L. R., and Sondhi, M. M.: An Introduction to the Application of the Theory of Probabilistic Functions of a Markov Process to Automatic Speech Recognition. Bell System Technical Journal, 62(4): 1035-1074. (1983)
+2. Levinson, S. E., Rabiner, L. R., and Sondhi, M. M.: An Introduction to the Application of the Theory of Probabilistic Functions of a Markov Process to Automatic Speech Recognition. Bell System Technical Journal, 62(4): 1035-1074. (1983)
 
-[3]: Wolfe conditions. (2016, January 20). In _Wikipedia, The Free Encyclopedia_. [http://en.wikipedia.org/wiki/Wolfe_conditions](http://en.wikipedia.org/wiki/Wolfe_conditions)
+3. Wolfe conditions. (2016, January 20). In _Wikipedia, The Free Encyclopedia_. [http://en.wikipedia.org/wiki/Wolfe_conditions](http://en.wikipedia.org/wiki/Wolfe_conditions)
 
-[4]: Nonlinear conjugate gradient method. (2016, February 22). In _Wikipedia, The Free Encyclopedia_. [http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method](http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method)
+4. Nonlinear conjugate gradient method. (2016, February 22). In _Wikipedia, The Free Encyclopedia_. [http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method](http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method)
 
 # Contact Us
 
