@@ -37,10 +37,16 @@ First column corresponds to correct observation, second -- incorrect. For two
 observations, typical for BKT, pGuess is B[2,1] -- unmastered skill but a
 correct response, and pSlip is B[1,2] - mastered skill but incorrect response.
 
+
 \pi .-------------------.
     |   pLo   | 1 - pLo |
     .-------------------.
 
+![equation](http://latex.codecogs.com/gif.latex?1%2Bsin%28mc%5E2%29%0D%0A)    
+| pLo | 1-pLo |
+|-----|-------|
+    
+```
 A   .-------------------.
     |    1    |    0    |
     |-------------------|
@@ -52,6 +58,7 @@ B   .-------------------.
     |-------------------|
     |    pG   | 1 - pG  |
     .-------------------.
+```
 
 For more details on BKT refer to [1]. [2], among other things, discusses how
 a gradient-based fitting of HMM can be implemented. [3, 4] cover additional
