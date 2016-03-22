@@ -14,9 +14,9 @@ For each skill BKT has four parameters.
 4. pSlip or pS - is a probability that a known skill is applied incorrectly, and
 5. pGuess or pG - is a probability that unknown skill will be applied correctly.
 
-Parameters of the BKT can be represented in the matrix form. Priors -- ![equation](http://latex.codecogs.com/gif.latex?%5Cpi) -- are a vector 1*N, where N is the number of states. Throughout this discussion, we will we assume that the first element of the \pi vector is the a priory probability of knowing the skill. pLearn is part of the transitions matrix A that captures probabilities of state changes from row to column and is N*N. No forgetting is captured by setting A[1,2] = 0 (from mastered to unmastered). pLearn corresponds to A[2,1] - from unmastered to mastered. pGuess and pSlip are specified in B -- observation matrix N*M, where M is the number of observations. First column corresponds to correct observation, second -- incorrect. For two observations, typical for BKT, pGuess is B[2,1] -- unmastered skill but a correct response, and pSlip is B[1,2] - mastered skill but incorrect response. 
+Parameters of the BKT can be represented in the matrix form. Priors -- [![\pi](http://latex.codecogs.com/gif.latex?%5Cpi)] -- are a vector 1*N, where N is the number of states. Throughout this discussion, we will we assume that the first element of the [![\pi](http://latex.codecogs.com/gif.latex?%5Cpi)] vector is the a priory probability of knowing the skill. pLearn is part of the transitions matrix A that captures probabilities of state changes from row to column and is N*N. No forgetting is captured by setting A[1,2] = 0 (from mastered to unmastered). pLearn corresponds to A[2,1] - from unmastered to mastered. pGuess and pSlip are specified in B -- observation matrix N*M, where M is the number of observations. First column corresponds to correct observation, second -- incorrect. For two observations, typical for BKT, pGuess is B[2,1] -- unmastered skill but a correct response, and pSlip is B[1,2] - mastered skill but incorrect response. 
 
-![equation](http://latex.codecogs.com/gif.latex?%5Cpi)
+[![\pi](http://latex.codecogs.com/gif.latex?%5Cpi)]
     
 | pLo | 1-pLo |
 |-----|-------|
@@ -34,7 +34,7 @@ B
 |  pG | 1-pG |
 
 
-For more details on BKT refer to [1][1]. [2][2], among other things, discusses how a gradient-based fitting of HMM can be implemented. [3][3] and [4][4] cover additional topics relevant for the implementation.
+For more details on BKT refer to [^1]. [^2], among other things, discusses how a gradient-based fitting of HMM can be implemented. [^3] and [^4] cover additional topics relevant for the implementation.
 
 # Getting and Compiling the Code
 
@@ -241,13 +241,13 @@ Depending on your hardware, the model should be fit in about 1-2 minutes.
 
 # References
 
-[1]: Corbett, A. T. and Anderson, J. R.: Knowledge tracing: Modeling the acquisition of procedural knowledge. User Modeling and User-Adapted Interaction, 4(4), 253-278. (1995)
+[^1]: Corbett, A. T. and Anderson, J. R.: Knowledge tracing: Modeling the acquisition of procedural knowledge. User Modeling and User-Adapted Interaction, 4(4), 253-278. (1995)
  
-[2]: Levinson, S. E., Rabiner, L. R., and Sondhi, M. M.: An Introduction to the Application of the Theory of Probabilistic Functions of a Markov Process to Automatic Speech Recognition. Bell System Technical Journal, 62(4): 1035-1074. (1983)
+[^2]: Levinson, S. E., Rabiner, L. R., and Sondhi, M. M.: An Introduction to the Application of the Theory of Probabilistic Functions of a Markov Process to Automatic Speech Recognition. Bell System Technical Journal, 62(4): 1035-1074. (1983)
 
-[3]: http://en.wikipedia.org/wiki/Wolfe_conditions
+[^3]: [http://en.wikipedia.org/wiki/Wolfe_conditions](http://en.wikipedia.org/wiki/Wolfe_conditions)
 
-[4]: http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method 
+[^4]: (http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method)[http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method]
 
 # Contact Us
 
