@@ -23,6 +23,9 @@
 		71D4588F17981E6500356EE4 /* InputUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D4587D17972C0400356EE4 /* InputUtil.cpp */; };
 		EB256607167FBF4000E9082A /* FitBit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB994B9216288D0C0098D5ED /* FitBit.cpp */; };
 		EB6936FC15EC398900A919B3 /* StripedArray.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB5D902A158B7C8C007ECB58 /* StripedArray.cpp */; };
+		EB6DCE101CA1B9730023A052 /* readme.md in Sources */ = {isa = PBXBuildFile; fileRef = EB6DCE0F1CA1B9730023A052 /* readme.md */; };
+		EB6DCE111CA1B9730023A052 /* readme.md in Sources */ = {isa = PBXBuildFile; fileRef = EB6DCE0F1CA1B9730023A052 /* readme.md */; };
+		EB6DCE121CA1B9730023A052 /* readme.md in Sources */ = {isa = PBXBuildFile; fileRef = EB6DCE0F1CA1B9730023A052 /* readme.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -58,6 +61,7 @@
 		EB32E9F4157FA159002F3FFB /* predicthmm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = predicthmm; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB5D9029158B7C8C007ECB58 /* StripedArray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StripedArray.h; sourceTree = "<group>"; };
 		EB5D902A158B7C8C007ECB58 /* StripedArray.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StripedArray.cpp; sourceTree = "<group>"; };
+		EB6DCE0F1CA1B9730023A052 /* readme.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = readme.md; sourceTree = "<group>"; };
 		EB994B9216288D0C0098D5ED /* FitBit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FitBit.cpp; sourceTree = "<group>"; };
 		EB994B9316288D0D0098D5ED /* FitBit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FitBit.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -91,6 +95,7 @@
 			isa = PBXGroup;
 			children = (
 				EB02599C162C61B600442454 /* makefile */,
+				EB6DCE0F1CA1B9730023A052 /* readme.md */,
 				71B056FD17A29AAC007D146C /* readme.txt */,
 				715BD81017AB35E700C9B6D3 /* toy_data.txt */,
 				715BD82117B0118000C9B6D3 /* toy_data_test.txt */,
@@ -229,6 +234,7 @@
 				71A39CB2179DB05F000F9610 /* StripedArray.cpp in Sources */,
 				71A39CB3179DB063000F9610 /* utils.cpp in Sources */,
 				71A39CB4179DB071000F9610 /* inputconvert.cpp in Sources */,
+				EB6DCE121CA1B9730023A052 /* readme.md in Sources */,
 				71A39CB5179DB074000F9610 /* InputUtil.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -241,6 +247,7 @@
 				71AF7E00176F6D73000C7E96 /* utils.cpp in Sources */,
 				71AF7E01176F6D77000C7E96 /* StripedArray.cpp in Sources */,
 				71AF7E02176F6D7A000C7E96 /* FitBit.cpp in Sources */,
+				EB6DCE101CA1B9730023A052 /* readme.md in Sources */,
 				71035516178A148A00EA034B /* HMMProblem.cpp in Sources */,
 				71D4588F17981E6500356EE4 /* InputUtil.cpp in Sources */,
 			);
@@ -254,6 +261,7 @@
 				EB256607167FBF4000E9082A /* FitBit.cpp in Sources */,
 				7186A257178A19A70031A73E /* predicthmm.cpp in Sources */,
 				71B056FA17A1A068007D146C /* InputUtil.cpp in Sources */,
+				EB6DCE111CA1B9730023A052 /* readme.md in Sources */,
 				71B056FB17A1A06F007D146C /* HMMProblem.cpp in Sources */,
 				71B056FC17A1A080007D146C /* utils.cpp in Sources */,
 			);
