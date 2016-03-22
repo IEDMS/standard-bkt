@@ -44,17 +44,19 @@ Open version of of the code is available via International Educational Data Mini
 git clone https://github.com/IEDMS/standard-bkt
 ```
 
-To compile issue `make all` command. If you are on Linux, the g++/gcc compiler and Open MP library should already be installed. In Mac OX, you would need command line tools of Xcode to be installed. g++/gcc compiler with Open MP (no longer bundled with Mac OS X by default) could be downloaded from [hpc.sourceforge.net](hpc.sourceforge.net). If you are on Windows, you might need to install cygwin and have `g++/gcc` compiler available and be sure to install `make` command with `cygwin`.
+To compile issue `make all` command. If you are on Linux, the `g++/gcc` compiler and Open MP library should already be installed. In Mac OX, you would need command line tools of Xcode to be installed. `g++/gcc` compiler with Open MP (no longer bundled with Mac OS X by default) could be downloaded from [hpc.sourceforge.net](http://hpc.sourceforge.net). If you are on Windows, you might need to install cygwin and have `g++/gcc` compiler available and be sure to install `make` command with `cygwin`.
 
 # Data 
 
-Input file data format is quite simple. Four tab separated columns: observation, student, problem/problem step, skill(s). Observation is a 1-started integer. For the two-state BKT, we advise to use 1 for 'correct' and 2 for 'incorrect'. Student is a string label, so is problem or problem step, whatever granularity you prefer. Skill is a string label. Multiple skill labels should be delimited by a character of your choice (do not use tab). An example of few lines of input is below where tilde symbol `~` is used as delimiter. 
+Input file data format is quite simple. Four tab separated columns: observation, student, problem/problem step, skill(s). Observation is a 1-started integer. For the two-state BKT, we advise to use 1 for _correct_ and 2 for _incorrect_. Student is a string label, so is problem or problem step, whatever granularity you prefer. Skill is a string label. Multiple skill labels should be delimited by a character of your choice (do not use tab). An example of few lines of input is below where tilde symbol `~` is used as delimiter. 
 
+```
 -- input file --
 2   student_001 unit1-section1-problem5-step1  addition~multiplication
 1   student_001 unit1-section1-problem5-step2  multiplication
 1   student_001 unit1-section1-problem5-step3  addition
 -- input file --
+```
 
 If there is no skill label for a particular row of data use `.` (dot) symbol. In test data, the utility will use known observations for training and will produce predictions for missing observations that should have `.` (dot) instead of observation code (1, 2, or otherwise).
 
@@ -210,7 +212,7 @@ Small sample data file <toy_data.txt> is generated using the following BKT param
 To fit a BKT model of this data using an EM algorithm run the following command:
 
 ```sh
-sh> ./trainhmm -s 1.1 -m 1 -p 1 toy_data.txt model.txt predict.txt
+./trainhmm -s 1.1 -m 1 -p 1 toy_data.txt model.txt predict.txt
 ```
 
 The model will have 90% accuracy and root mean squared error (RMSE) = 0.302691 and the recovered BKT parameters would be: pLo=0.00000000, pT=0.16676161, pS=0.00044059, pG=0.00038573. Overall loglikelihood, actually, goes up from 9.3763477 to 10.4379501 in 3 iterations.
@@ -220,28 +222,31 @@ If we fit BKT model using Gradient Descent method using `-s 1.2` argument, the r
 To generate predictions using a previously fit model run the following command  (do not forget that prediction will only be generated for rows where observation is not known -- marked with `.`): 
 
 ```sh
-sh> ./predicthmm -p 1 toy_data_test.txt model.txt predict.txt
+./predicthmm -p 1 toy_data_test.txt model.txt predict.txt
 ```
 
 To give this tool a proper test you might want to try it on a KDD Cup 2010 dataset donated to the Pittsburgh Science of Learning Center by Carnegie Learning Inc. The dataset can be downloaded (after a quick registration) from [here](http://pslcdatashop.web.cmu.edu/KDDCup/). This datasets consists of training and challenge sets. For the sake of testing the tool, download the challenge  Algebra I set that has about 9 million transactions of over 3300 students. The training file should be trimmed to the tool's format. See shell commands below that do that.
 
 ```sh
-sh> gawk -F"\t" 'BEGIN{OFS=""} {if(NR==1)next; skill=$20; gsub("~~", "~", skill); skill=(skill=="")?".":($3"__"skill); print 2-$14,$2,$3"__"$4,skill;}' algebra_2008_2009_train.txt > a89_kts_train.txt
+gawk -F"\t" 'BEGIN{OFS=""} {if(NR==1)next; skill=$20; gsub("~~", "~", skill); skill=(skill=="")?".":($3"__"skill); print 2-$14,$2,$3"__"$4,skill;}' algebra_2008_2009_train.txt > a89_kts_train.txt
 ```
 
 To fit a BKT model of this dataset using gradient descent method as well as to compute fit metrics and the prediction run the following command:
 
 ```sh
-sh> ./trainhmm -s 1.2 -d ~ -m 1 -p 1 a89_kts_train.txt model.txt predict.txt
+./trainhmm -s 1.2 -d ~ -m 1 -p 1 a89_kts_train.txt model.txt predict.txt
 ```
 
 Depending on your hardware, the model should be fit in about 1-2 minutes.
 
 # References
 
-[1]: Corbett, A. T. and Anderson, J. R.: Knowledge tracing: Modeling the acquisition of procedural knowledge. User Modeling and User-Adapted Interaction, 4(4), 253-278. (1995) 
+[1]: Corbett, A. T. and Anderson, J. R.: Knowledge tracing: Modeling the acquisition of procedural knowledge. User Modeling and User-Adapted Interaction, 4(4), 253-278. (1995)
+ 
 [2]: Levinson, S. E., Rabiner, L. R., and Sondhi, M. M.: An Introduction to the Application of the Theory of Probabilistic Functions of a Markov Process to Automatic Speech Recognition. Bell System Technical Journal, 62(4): 1035-1074. (1983)
+
 [3]: http://en.wikipedia.org/wiki/Wolfe_conditions
+
 [4]: http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method 
 
 # Contact Us
