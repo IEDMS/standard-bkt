@@ -14,7 +14,7 @@ For each skill BKT has four parameters.
 4. pSlip or pS - is a probability that a known skill is applied incorrectly, and
 5. pGuess or pG - is a probability that unknown skill will be applied correctly.
 
-Parameters of the BKT can be represented in the matrix form. Priors -- ![\pi](http://latex.codecogs.com/gif.latex?%5Cpi) -- are a vector 1*N, where N is the number of states. Throughout this discussion, we will we assume that the first element of the ![\pi](http://latex.codecogs.com/gif.latex?%5Cpi) vector is the a priory probability of knowing the skill. pLearn is part of the transitions matrix A that captures probabilities of state changes from row to column and is N*N. No forgetting is captured by setting A[1,2] = 0 (from mastered to unmastered). pLearn corresponds to A[2,1] - from unmastered to mastered. pGuess and pSlip are specified in B -- observation matrix N*M, where M is the number of observations. First column corresponds to correct observation, second -- incorrect. For two observations, typical for BKT, pGuess is B[2,1] -- unmastered skill but a correct response, and pSlip is B[1,2] - mastered skill but incorrect response. 
+Parameters of the BKT can be represented in the matrix form. Priors -- ![\pi](http://latex.codecogs.com/gif.latex?%5Cpi) -- are a vector 1\*N, where N is the number of states. Throughout this discussion, we will we assume that the first element of the ![\pi](http://latex.codecogs.com/gif.latex?%5Cpi) vector is the a priory probability of knowing the skill. pLearn is part of the transitions matrix A that captures probabilities of state changes from row to column and is N\*N. No forgetting is captured by setting A[1,2] = 0 (from mastered to unmastered). pLearn corresponds to A[2,1] - from unmastered to mastered. pGuess and pSlip are specified in B -- observation matrix N\*M, where M is the number of observations. First column corresponds to correct observation, second -- incorrect. For two observations, typical for BKT, pGuess is B[2,1] -- unmastered skill but a correct response, and pSlip is B[1,2] - mastered skill but incorrect response. 
 
 ![\pi](http://latex.codecogs.com/gif.latex?%5Cpi)
     
@@ -35,7 +35,7 @@ For more details on BKT refer to (Corbett & Anderson, 1995)[^1]. (Levinson et al
 
 # Getting and Compiling the Code
 
-Open version of of the code is available via International Educational Data Mining Society GitHub [repository](http://goo.gl/5DqpkW). If you have git tool installed, use the following command to get the source code.
+Open version of the code is available via International Educational Data Mining Society GitHub [repository](http://goo.gl/5DqpkW). If you have git tool installed, use the following command to get the source code.
 
 ```sh
 git clone https://github.com/IEDMS/standard-bkt
