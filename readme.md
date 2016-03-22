@@ -42,7 +42,8 @@ correct response, and pSlip is B[1,2] - mastered skill but incorrect response.
     |   pLo   | 1 - pLo |
     .-------------------.
 
-![equation](http://latex.codecogs.com/gif.latex?1%2Bsin%28mc%5E2%29%0D%0A)    
+![equation](http://latex.codecogs.com/gif.latex?1%2Bsin%28mc%5E2%29%0D%0A)
+    
 | pLo | 1-pLo |
 |-----|-------|
     
