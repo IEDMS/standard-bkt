@@ -18,17 +18,20 @@ Parameters of the BKT can be represented in the matrix form. Priors -- ![\pi](ht
 
 ![\pi](http://latex.codecogs.com/gif.latex?%5Cpi)
     
-| pLo | 1-pLo |
-    
+
+ pLo | 1-pLo 
+-----|-------    
 A
 
 |  1 |    0 |
 | pT | 1-pT |
+-----|-------    
 
 B
 
 | 1-pS|   pS |
 |  pG | 1-pG |
+------|-------    
 
 
 For more details on BKT refer to (Corbett & Anderson, 1995)[^1]. (Levinson et al., 1983 )[2], among other things, discusses how a gradient-based fitting of HMM can be implemented. [3][3] and [4][4] cover additional topics relevant for the implementation.
