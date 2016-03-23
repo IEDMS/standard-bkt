@@ -21,6 +21,7 @@ Parameters of the BKT can be represented in the matrix form. Priors -- ![\pi](ht
 
  pLo | 1-pLo 
 -----|-------    
+
 A
 
 |  1 |    0 |
