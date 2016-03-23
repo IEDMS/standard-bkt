@@ -24,24 +24,6 @@ Parameters of the BKT can be represented in the matrix form. Priors -- ![\pi](ht
 ![B=\[1-p(S), p(S); p(G), 1-p(G)\]](http://latex.codecogs.com/gif.latex?B%3D%0D%0A%5Cbegin%7Bbmatrix%7D%0D%0A1-p%28S%29%26p%28S%29%5C%5C%0D%0Ap%28G%29%261-p%28G%29%0D%0A%5Cend%7Bbmatrix%7D)
 
 
-![\pi](http://latex.codecogs.com/gif.latex?%5Cpi)
-
- pLo | 1-pLo 
------|-------    
-
-A
-
-|  1 |    0 |
------|-------    
-| pT | 1-pT |
-
-
-B
-
-| 1-pS|   pS |
-------|-------    
-|  pG | 1-pG |
-
 For more details on BKT refer to [1]. [2], among other things, discusses how a gradient-based fitting of HMM can be implemented. [3, 4] cover additional topics relevant for the implementation.
 
 # Getting and Compiling the Code
@@ -104,78 +86,48 @@ In the model file example above, we see a specification of the solver algorithm 
 
 ```
 trainhmm [options] input_file [[model_file] prediction_file]
+```
+
 options:
--s : structure.solver[.solver setting], structures: 1-by skill, 2-by user;
-     solvers: 1-Baum-Welch, 2-Gradient Descent, 3-Conjugate Gradient Descent;
-     Conjugate Gradient Descent has 3 settings: 1-Polak-Ribiere,
-     2-Fletcher–Reeves, 3-Hestenes-Stiefel, and 4-Dai-Yuan.
-     For example '-s 1.3.1' would be by skill structure (classical) with
-     Conjugate Gradient Descent and Hestenes-Stiefel formula, '-s 2.1' would be
-     by student structure fit using Baum-Welch method.
--S : perform scaling of forward/backward variables: 0 - off (default), 1 - on.
-     Only allowed for Baum-Welch solver ('-s 1.1' setting), otherwise auto-set
-     to off.
--e : tolerance of termination criterion (0.01 for parameter change default);
-     could be computed by the change in log-likelihood per datapoint, e.g.
-    '-e 0.00001,l'.
--i : maximum number of iterations (200 by default)
--q : quiet mode, without output, 0-no (default), or 1-yes
--n : number of hidden states, should be 2 or more (default 2)
--0 : initial parameters comma-separated for priors, transition, and emission
-     probabilities skipping the last value from each vector (matrix row) since
-     they should sum up to 1; default 0.5,1.0,0.4,0.8,0.2
--l : lower boundaries for parameters, comma-separated for priors, transition,
-     and emission probabilities (without skips); default 0,0,1,0,0,0,0,0,0,0
--u : upper boundaries for params, comma-separated for priors, transition,
-     and emission probabilities (without skips); default 1,1,1,1,1,1,1,0.3,0.3,1
-     with slip and guess capped at 0.3.
--c : specification of the C weight and centroids for L2 penalty, empty (default).
-     For standard BKT - 4 comma-separated numbers: C weight of the penalty and
-     centroids, for PI, A, and B matrices respectively. If used for iBKT with
-     student effects, 8 values will be used with 4 additional values for student
-     effect matrices. For example, '-c 1.0,0.5,0.5,0.0'.
--f : fit as one skill, 0-no (default), 1 - fit as one skill and use params as
-     starting point for multi-skill, 2 - force one skill
--m : report model fitting metrics (AIC, BIC, RMSE) 0-no (default), 1-yes. To 
-     specify observation for which metrics to be reported, list it after ','.
-     For example '-m 0', '-m 1' (by default, observation 1 is assumed), '-m 1,2'
-     (compute metrics for observation 2). Incompatible with '-v' option.
--v : cross-validation folds, stratification, and target state to validate
-     against, folds input/output file, default 0 (no cross-validation),
-     examples '-v 5,i,2' - 5 fold, item-stratified c.-v., predict state 2,
-     '-v 10' - 10-fold subject-stratified c.-v. predict state 1 by default,
-     alternatively '-v 10,g,1', '-v 5,n,2,folds.txt,o' - 5-fold unstratified
-     c.-v. predicting state 2, [o]output folds to 'folds.txt', and here 
-     '-v 5,n,2,folds.txt,i', folds are actually read [i]n from the file.
--p : report model predictions on the train set 0-no (default), 1-yes; 2-yes,
-     plus output state probability; works with -v and -m parameters.
--U : controls how update to the probability distribution of the states is
-     updated. Takes the following format '-U r|g[,t|g]', where first
-     character controls how prediction treats known observations, second -- how
-     prediction treats unknown observations, and third -- whether to output
-     probabilities of priors. Dealing with known observations 'r' - reveal
-     actual observations for the update of state probability distribution (makes
-     sense for modeling how an actual system would work), 'g' - 'guessing' the
-     observation based on the predicted outcomes (arg max) -- more appropriate
-     when comparing models (so that no information about observation is never
-     revealed). Dealing with unknown observations (marked as '.' -- dot): 't' --
-     use transition matrix only, 'g' -- 'guess' the observation.
-     Default (if ommitted) is '-U r,t'.
-     For examle, '-U g,g would require 'guessing' of what the observation was
-     using model parameters and the running value of the probabilities of state
-     distributions.
--d : delimiter for multiple skills per observation; single skill per observation
-     (default), otherwise -- delimiter character, e.g. '-d ~'.
--b : treat input file as binary input file created from text file by
-     inputconvert utility.
--B : block re-estimation of prior, transitions, or emissions parameters
-     respectively (default is '-B 0,0,0'), to block re-estimation of transition
-     probabilities specify '-B 0,1,0'.
--P : use parallel processing, default - 0 (no parallel processing), 1 - fit
-     separate skills/students separately, 2 - fit separate sequences within
-     skill/student separately.
--o : in addition to printing to console, print output to the file specified
-     default is empty.
+`-s` : structure.solver[.solver setting], structures: 1-by skill, 2-by user; solvers: 1-Baum-Welch, 2-Gradient Descent, 3-Conjugate Gradient Descent; Conjugate Gradient Descent has 3 settings: 1-Polak-Ribiere, 2-Fletcher–Reeves, 3-Hestenes-Stiefel, and 4-Dai-Yuan. For example '-s 1.3.1' would be by skill structure (classical) with Conjugate Gradient Descent and Hestenes-Stiefel formula, '-s 2.1' would be by student structure fit using Baum-Welch method.
+
+`-S` : perform scaling of forward/backward variables: 0 - off (default), 1 - on. Only allowed for Baum-Welch solver ('-s 1.1' setting), otherwise auto-set to off.
+
+`-e` : tolerance of termination criterion (0.01 for parameter change default); could be computed by the change in log-likelihood per datapoint, e.g. '-e 0.00001,l'.
+
+`-i` : maximum number of iterations (200 by default)
+
+`-q` : quiet mode, without output, 0-no (default), or 1-yes
+
+`-n` : number of hidden states, should be 2 or more (default 2)
+
+`-0` : initial parameters comma-separated for priors, transition, and emission probabilities skipping the last value from each vector (matrix row) since they should sum up to 1; default 0.5,1.0,0.4,0.8,0.2
+
+`-l` : lower boundaries for parameters, comma-separated for priors, transition, and emission probabilities (without skips); default 0,0,1,0,0,0,0,0,0,0
+
+`-u` : upper boundaries for params, comma-separated for priors, transition, and emission probabilities (without skips); default 1,1,1,1,1,1,1,0.3,0.3,1 with slip and guess capped at 0.3.
+
+`-c` : specification of the C weight and centroids for L2 penalty, empty (default). For standard BKT - 4 comma-separated numbers: C weight of the penalty and centroids, for PI, A, and B matrices respectively. If used for iBKT with student effects, 8 values will be used with 4 additional values for student effect matrices. For example, '-c 1.0,0.5,0.5,0.0'.
+
+`-f` : fit as one skill, 0-no (default), 1 - fit as one skill and use params as starting point for multi-skill, 2 - force one skill
+
+`-m` : report model fitting metrics (AIC, BIC, RMSE) 0-no (default), 1-yes. To  specify observation for which metrics to be reported, list it after ','. For example '-m 0', '-m 1' (by default, observation 1 is assumed), '-m 1,2' (compute metrics for observation 2). Incompatible with '-v' option.
+
+`-v` : cross-validation folds, stratification, and target state to validate against, folds input/output file, default 0 (no cross-validation), examples '-v 5,i,2' - 5 fold, item-stratified c.-v., predict state 2, '-v 10' - 10-fold subject-stratified c.-v. predict state 1 by default, alternatively '-v 10,g,1', '-v 5,n,2,folds.txt,o' - 5-fold unstratified c.-v. predicting state 2, [o]output folds to 'folds.txt', and here  '-v 5,n,2,folds.txt,i', folds are actually read [i]n from the file.
+
+`-p` : report model predictions on the train set 0-no (default), 1-yes; 2-yes, plus output state probability; works with -v and -m parameters.
+
+`-U` : controls how update to the probability distribution of the states is updated. Takes the following format '-U r|g[,t|g]', where first character controls how prediction treats known observations, second -- how prediction treats unknown observations, and third -- whether to output probabilities of priors. Dealing with known observations 'r' - reveal actual observations for the update of state probability distribution (makes sense for modeling how an actual system would work), 'g' - 'guessing' the observation based on the predicted outcomes (arg max) -- more appropriate when comparing models (so that no information about observation is never revealed). Dealing with unknown observations (marked as '.' -- dot): 't' -- use transition matrix only, 'g' -- 'guess' the observation. Default (if ommitted) is '-U r,t'. For examle, '-U g,g would require 'guessing' of what the observation was using model parameters and the running value of the probabilities of state distributions.
+
+`-d` : delimiter for multiple skills per observation; single skill per observation (default), otherwise -- delimiter character, e.g. '-d ~'.
+
+`-b` : treat input file as binary input file created from text file by inputconvert utility.
+
+`-B` : block re-estimation of prior, transitions, or emissions parameters respectively (default is '-B 0,0,0'), to block re-estimation of transition probabilities specify '-B 0,1,0'.
+
+`-P` : use parallel processing, default - 0 (no parallel processing), 1 - fit separate skills/students separately, 2 - fit separate sequences within skill/student separately.
+
+`-o` : in addition to printing to console, print output to the file specified default is empty.
 ```
 
 # Using models for prediction
