@@ -22,24 +22,29 @@
       <h1>
 <a id="tool-for-fitting-bayesian-knowledge-tracing-models" class="anchor" href="#tool-for-fitting-bayesian-knowledge-tracing-models" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Tool for fitting Bayesian Knowledge Tracing models</h1>
 
-<p>This tool is developed to fit Bayesian Knowledge Training models efficiently on large datasets. It is a command line utility written in C/C++. The project started while the author was a post-doc at Human-Computer Interaction Institute, Carnegie Mellon University. These sources are published under BSD-new (3-clause BSD) license.</p>
+<p>This tool is developed to fit Bayesian Knowledge Training models on large datasets command-line utility for fitting standard BKT models at scale. It is a command line utility written in C/C++. The project started while the author was a post-doc at Human-Computer Interaction Institute, Carnegie Mellon University. These sources are published under BSD-new (3-clause BSD) license.</p>
 
 <h1>
 <a id="bayesian-knowledge-tracing" class="anchor" href="#bayesian-knowledge-tracing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Bayesian Knowledge Tracing</h1>
 
-<p>BKT is a user modeling approach in wide use in the area of Intelligent Tutoring Systems. The goal of BKT is to infer whether the student has mastered a skill or not from a pattern of successful or unsuccessful attempts to apply the skill. It is a special case of Hidden Markov Model (HMM). In BKT there are two types of nodes: binary state nodes capture skill mastery (mastered or not) and binary observation nodes (correct or incorrect application of a skill). </p>
+<p>BKT is a user modeling approach widely use in the area of Intelligent Tutoring Systems (ITS). In ITS, it is customary to tag problems and problem steps students are solving with knowledge quanta often called skills. When a student is attempting to solve a problem or a problem step, they are said to <em>practice a skill</em>. A student model in a general sense performs deductions on whether the skill(s) is (are) mastered given a sequence of correct and incorrect attempts to solve a problems/problem steps that are tagged with it. The goal of BKT is to infer whether the student has mastered a skill or not from a pattern of successful or unsuccessful attempts to apply it. BKT uses a formalism of a Hidden Markov Model to estimate student's skill mastery. In BKT, there are two types of nodes: binary state nodes capture skill mastery (one per skill) that assume values of <em>mastered</em> or <em>not mastered</em> and binary observation nodes (one per skill) that assume values of <em>correct</em> or <em>incorrect</em>. </p>
 
-<p>For each skill BKT has four parameters.</p>
+<p>Each skill in standard BKT has four parameters.</p>
 
 <ol>
-<li>pInit or pLo - is a probability the skill was known a priori,</li>
-<li>pLearn or pT - is a probability the skill will transition into <em>mastered</em> state upon practice attempt,</li>
-<li>pForget or pF - is a probability that the skill will transition into <em>not mastered state</em> upon practice attempt. Traditionally, pForget is set to zero.</li>
-<li>pSlip or pS - is a probability that a known skill is applied incorrectly, and</li>
-<li>pGuess or pG - is a probability that unknown skill will be applied correctly.</li>
+<li>
+<em>p-init</em> or p(Lo) - is a probability the skill was known a priori,</li>
+<li>
+<em>p-learn</em> or p(T) - is a probability the skill will transition into <em>mastered</em> state upon practice attempt,</li>
+<li>
+<em>p-forget</em> or p(F) - is a probability that the skill will transition into <em>not mastered state</em> upon practice attempt. Traditionally, <em>p-forget</em> is set to zero and is not counted towards the total number of parameters.</li>
+<li>
+<em>p-slip</em> or p(S) - is a probability that a known skill is applied incorrectly, and</li>
+<li>
+<em>p-guess</em> or p(G) - is a probability that unknown skill will be applied correctly.</li>
 </ol>
 
-<p>Parameters of the BKT can be represented in the matrix form. Priors -- <img src="http://latex.codecogs.com/gif.latex?%5CPi" alt="\pi"> -- are a vector 1*N, where N is the number of states. Throughout this discussion, we will we assume that the first element of the <img src="http://latex.codecogs.com/gif.latex?%5CPi" alt="\pi"> vector is the a priory probability of knowing the skill. pLearn is part of the transitions matrix A that captures probabilities of state changes from row to column and is N*N. No forgetting is captured by setting A[1,2] = 0 (from mastered to unmastered). pLearn corresponds to A[2,1] - from unmastered to mastered. pGuess and pSlip are specified in B -- observation matrix N*M, where M is the number of observations. First column corresponds to correct observation, second -- incorrect. For two observations, typical for BKT, pGuess is B[2,1] -- unmastered skill but a correct response, and pSlip is B[1,2] - mastered skill but incorrect response. </p>
+<p>Parameters of the BKT can be represented in the matrix form. Priors – <img src="http://latex.codecogs.com/gif.latex?%5CPi" alt="\pi"> – are a vector 1*N, where N is the number of states (N=2 in standard BKT). Throughout this discussion, we will we assume that the first element of the <img src="http://latex.codecogs.com/gif.latex?%5CPi" alt="\pi"> vector is the a priory probability of knowing the skill. <em>p-learn</em> is part of the transitions matrix A that captures probabilities of state changes from the row to the column and is N*N. No forgetting is captured by setting A[1,2] = 0 (from mastered to unmastered). <em>p-learn</em> corresponds to A[2,1] - from unmastered to mastered. <em>p-guess</em> and <em>p-slip</em> are specified in B – observation matrix N*M, where M is the number of observations (M=2 in standard BKT). The first column corresponds to a correct observation, the second – to the incorrect. For standard BKT with two observations, <em>p-guess</em> is B[2,1] – unmastered skill but a correct response, and <em>p-splip</em> is B[1,2] - mastered skill but an incorrect response. </p>
 
 <p><img src="http://latex.codecogs.com/gif.latex?%5CPi%3D%0D%0A%5Cbegin%7Bbmatrix%7D%0D%0Ap%28L_0%29%261-p%28L_0%29%5C%5C%0D%0A%5Cend%7Bbmatrix%7D" alt="\Pi=\[p(L_0), 1-p(L_0)\]"></p>
 
@@ -52,16 +57,16 @@
 <h1>
 <a id="getting-and-compiling-the-code" class="anchor" href="#getting-and-compiling-the-code" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Getting and Compiling the Code</h1>
 
-<p>Open version of the code is available via International Educational Data Mining Society GitHub <a href="http://goo.gl/5DqpkW">repository</a>. If you have git tool installed, use the following command to get the source code.</p>
+<p>A public version of the standard BKT code is available via International Educational Data Mining Society GitHub <a href="http://goo.gl/5DqpkW">repository</a>. If you have <code>git</code> utility installed, use the following command to get the source code.</p>
 
 <div class="highlight highlight-source-shell"><pre>git clone https://github.com/IEDMS/standard-bkt</pre></div>
 
-<p>To compile issue <code>make all</code> command. If you are on Linux, the <code>g++/gcc</code> compiler and Open MP library should already be installed. In Mac OX, you would need command line tools of Xcode to be installed. <code>g++/gcc</code> compiler with Open MP (no longer bundled with Mac OS X by default) could be downloaded from <a href="http://hpc.sourceforge.net">hpc.sourceforge.net</a>. If you are on Windows, you might need to install cygwin and have <code>g++/gcc</code> compiler available and be sure to install <code>make</code> command with <code>cygwin</code>.</p>
+<p>To compile issue <code>make all</code> command. If you are on Linux, the <code>g++/gcc</code> compiler and Open MP library should already be installed. On Mac OX, you would need command line tools of Xcode to be installed. <code>g++/gcc</code> compiler with Open MP (no longer bundled with Mac OS X by default) could be downloaded from <a href="http://hpc.sourceforge.net">hpc.sourceforge.net</a>. If you are on Windows, you might need to install <code>cygwin</code> and have <code>g++/gcc</code> compiler available and be sure to install <code>make</code> command with <code>cygwin</code>.</p>
 
 <h1>
 <a id="data" class="anchor" href="#data" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Data</h1>
 
-<p>Input file data format is quite simple. Four tab separated columns: observation, student, problem/problem step, skill(s). Observation is a 1-started integer. For the two-state BKT, we advise to use 1 for <em>correct</em> and 2 for <em>incorrect</em>. Student is a string label, so is problem or problem step, whatever granularity you prefer. Skill is a string label. Multiple skill labels should be delimited by a character of your choice (do not use tab). An example of few lines of input is below where tilde symbol <code>~</code> is used as delimiter. </p>
+<p>Input file data format is quite simple – four tab-separated columns: observation, student, problem/problem step, skill(s). Observation is a 1-started integer. For the two-state BKT, we advise using 1 for <em>correct</em> and 2 for <em>incorrect</em>. The student is a string label, so is problem or problem step, whatever granularity you prefer. Skill is a string label. Multiple skill labels should be delimited by a character of your choice (do not use tab). An example with a few lines of input is below. Here, tilde symbol <code>~</code> is used as a delimiter. </p>
 
 <pre><code>-- input file --
 2   student_001 unit1-section1-problem5-step1  addition~multiplication
@@ -72,9 +77,9 @@
 
 <p>If there is no skill label for a particular row of data use <code>.</code> (dot) symbol. In test data, the utility will use known observations for training and will produce predictions for missing observations that should have <code>.</code> (dot) instead of observation code (1, 2, or otherwise).</p>
 
-<p>Output files are the model and the predictions file. Model file contains general information about the data, e.g., number of observations, number of skills and number of problems/problem steps; as well as the model parameters.</p>
+<p>Output files are the model file and the predictions file. The model file contains general information about the data, e.g., the number of observations, the number of skills and the number of problems/problem steps; as well as the model parameters.</p>
 
-<p>Prediction file consists of model predictions for each row of the input file. Depending on the option (see parameter specifications below), you can print out probability distribution for student's response (probability of correct and probability of incorrect, if the observation node is binary) and, additionally, print out probability distributions over the values of the hidden state for all skills specified for the data point. The probability values are tab separated. See examples of a outputs file below. </p>
+<p>Prediction file consists of model predictions for each row of the input file. Depending on the option (see parameter specifications below). You can print out probability distribution for student's response (probability of correct and probability of incorrect, if the observation node is binary) and, additionally, print out probability distributions over the values of the hidden state for all skills specified for that particular data point. The probability values are tab separated. See examples of a outputs file below. </p>
 
 <pre><code>-- model file --
 SolverId    1.1
@@ -90,7 +95,7 @@ B   0.79000000  0.21000000  0.22000000  0.78000000
 -- model file --
 </code></pre>
 
-<p>In the model file example above, we see a specification of the solver algorithm (to be discussed below), one skill (nK=1), one student in the data (nG=1), two hidden states and 2 observations (nS and nO respectively). Skill numbering is zero started. Skill name is "multiplication-skill". Rows prefixed with PI, A, and B correspond to priors, transition, and observation matrices written row by row. Thus, first element of PI is pLo=0.55, 3rd element of A is pT=0.4, 2nd and 3rd elements of B are pS=0.12 and pG=0.22 respectively.</p>
+<p>In the model file example above, we see a specification of the solver algorithm (to be discussed below), one skill (nK=1), one student in the data (nG=1), two hidden states and 2 observations (nS and nO respectively). Skill numbering is zero-started. Skill name is "multiplication-skill". Rows prefixed with PI, A, and B correspond to priors, transition, and observation matrices written row by row. Thus, the first element of PI is p(Lo)=0.55, 3rd element of A is p(T)=0.4, 2nd and 3rd elements of B are p(S)=0.12 and p(G)=0.22 respectively.</p>
 
 <pre><code>-- prediction file --
 0.73    0.27
@@ -138,17 +143,17 @@ B   0.79000000  0.21000000  0.22000000  0.78000000
 
 <p><code>-p</code> : report model predictions on the train set 0-no (default), 1-yes; 2-yes, plus output state probability; works with -v and -m parameters.</p>
 
-<p><code>-U</code> : controls how update to the probability distribution of the states is updated. Takes the following format <code>-U r|g[,t|g]</code>, where first character controls how prediction treats known observations, second -- how prediction treats unknown observations, and third – whether to output probabilities of priors. Dealing with known observations <code>r</code> - reveal actual observations for the update of state probability distribution (makes sense for modeling how an actual system would work), <code>g</code> – <code>guessing</code> the observation based on the predicted outcomes (arg max) -- more appropriate when comparing models (so that no information about observation is never revealed). Dealing with unknown observations (marked as <code>.</code> – dot): <code>t</code> – use transition matrix only, <code>g</code> – <code>guess</code> the observation. Default (if ommitted) is <code>-U r,t</code>. For examle, <code>-U g,g would require</code>guessing` of what the observation was using model parameters and the running value of the probabilities of state distributions.</p>
+<p><code>-U</code> : controls how the probability distribution of the states is updated. Takes the following format <code>-U r|g[,t|g]</code>, where the first character controls how prediction treats known observations, second – how prediction treats unknown observations, and third – whether to output probabilities of priors. Dealing with known observations <code>r</code> - reveal actual observations for the update of state probability distribution (makes sense for modeling how an actual system would work), <code>g</code> – <code>guessing</code> the observation based on the predicted outcomes (arg max) – more appropriate when comparing models (so that no information about observation is never revealed). Dealing with unknown observations (marked as <code>.</code> – dot): <code>t</code> – use transition matrix only, <code>g</code> – <code>guess</code> the observation. Default (if ommitted) is <code>-U r,t</code>. For examle, <code>-U g,g would require</code>guessing` of what the observation was using model parameters and the running value of the probabilities of state distributions.</p>
 
 <p><code>-d</code> : delimiter for multiple skills per observation; single skill per observation (default), otherwise – delimiter character, e.g. <code>-d ~</code>.</p>
 
-<p><code>-b</code> : treat input file as binary input file created from text file by inputconvert utility.</p>
+<p><code>-b</code> : treat input file as binary input file created from the text file by the <code>inputconvert</code> utility.</p>
 
 <p><code>-B</code> : block re-estimation of prior, transitions, or emissions parameters respectively (default is <code>-B 0,0,0</code>), to block re-estimation of transition probabilities specify <code>-B 0,1,0</code>.</p>
 
 <p><code>-P</code> : use parallel processing, default - 0 (no parallel processing), 1 - fit separate skills/students separately, 2 - fit separate sequences within skill/student separately.</p>
 
-<p><code>-o</code> : in addition to printing to console, print output to the file specified default is empty.</p>
+<p><code>-o</code> : in addition to printing to the console, print output to the file specified after this option (by default is empty and no extra printing is done).</p>
 
 <h1>
 <a id="using-models-for-prediction" class="anchor" href="#using-models-for-prediction" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Using models for prediction</h1>
@@ -166,11 +171,11 @@ B   0.79000000  0.21000000  0.22000000  0.78000000
 
 <p><code>-d</code> : delimiter for multiple skills per observation; single skill per observation (default), otherwise – delimiter character, e.g. <code>-d ~</code>.</p>
 
-<p><code>-b</code> : treat input file as binary input file created from text file by inputconvert utility.</p>
+<p><code>-b</code> : treat input file as binary input file created from a text file by the <code>inputconvert</code> utility.</p>
 
 <p><code>-p</code> : report model predictions on the train set 0-no (default), 1-yes; 2-yes, plus output state probability; works with <code>-v</code> and <code>-m</code> parameters.</p>
 
-<p><code>-U</code> : controls how update to the probability distribution of the states is updated. Takes the following format <code>-U r|g[,t|g]</code>, where first character controls how prediction treats known observations, second – how prediction treats unknown observations, and third – whether to output probabilities of priors. Dealing with known observations <code>r</code> - reveal actual observations for the update of state probability distribution (makes sense for modeling how an actual system would work), <code>g</code> - <code>guessing</code> the observation based on the predicted outcomes (arg max) – more appropriate when comparing models (so that no information about observation is never revealed). Dealing with unknown observations (marked as <code>.</code> – dot): <code>t</code> – use transition matrix only, <code>g</code> – <code>guess</code> the observation. Default (if ommitted) is <code>-U r,t</code>. For examle, <code>-U g,g</code> would require <code>guessing</code> of what the observation was using model parameters and the running value of the probabilities of state distributions.</p>
+<p><code>-U</code> : controls how the probability distribution of the states is updated. Takes the following format <code>-U r|g[,t|g]</code>, where the first character controls how prediction treats known observations, second – how prediction treats unknown observations, and third – whether to output probabilities of priors. Dealing with known observations <code>r</code> - reveal actual observations for the update of state probability distribution (makes sense for modeling how an actual system would work), <code>g</code> - <code>guessing</code> the observation based on the predicted outcomes (arg max) – more appropriate when comparing models (so that no information about observation is never revealed). Dealing with unknown observations (marked as <code>.</code> – dot): <code>t</code> – use transition matrix only, <code>g</code> – <code>guess</code> the observation. Default (if ommitted) is <code>-U r,t</code>. For examle, <code>-U g,g</code> would require <code>guessing</code> of what the observation was using model parameters and the running value of the probabilities of state distributions.</p>
 
 <h1>
 <a id="examples" class="anchor" href="#examples" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Examples</h1>
@@ -185,11 +190,11 @@ B   0.79000000  0.21000000  0.22000000  0.78000000
 
 <p>If we fit BKT model using Gradient Descent method using <code>-s 1.2</code> argument, the recovered parameters would be: pLo=0.00041944, pT=0.17478539, pS=0.07938036, 0.03804388, the accuracy would remain at 90% while RMSE = 0.299250. Loglikelihood changes from  9.3763477 to 6.4099682 after 11 iterations.</p>
 
-<p>To generate predictions using a previously fit model run the following command  (do not forget that prediction will only be generated for rows where observation is not known -- marked with <code>.</code>): </p>
+<p>To generate predictions using a previously fit model run the following command  (do not forget that prediction will only be generated for rows where observation is not known – marked with <code>.</code>): </p>
 
 <div class="highlight highlight-source-shell"><pre>./predicthmm -p 1 toy_data_test.txt model.txt predict.txt</pre></div>
 
-<p>To give this tool a proper test you might want to try it on a KDD Cup 2010 dataset donated to the Pittsburgh Science of Learning Center by Carnegie Learning Inc. The dataset can be downloaded (after a quick registration) from <a href="http://pslcdatashop.web.cmu.edu/KDDCup/">here</a>. This datasets consists of training and challenge sets. For the sake of testing the tool, download the challenge  Algebra I set that has about 9 million transactions of over 3300 students. The training file should be trimmed to the tool's format. See shell commands below that do that.</p>
+<p>To give this tool a proper test you might want to try it on a KDD Cup 2010 dataset donated to the Pittsburgh Science of Learning Center by Carnegie Learning Inc. The dataset can be downloaded (after a quick registration) from <a href="http://pslcdatashop.web.cmu.edu/KDDCup/">here</a>. This dataset consists of training and challenge sets. For the sake of testing the tool, download the challenge  Algebra I set that has about 9 million transactions of over 3300 students. The training file should be trimmed to the tool's format. See shell commands below that do that.</p>
 
 <div class="highlight highlight-source-shell"><pre>gawk -F<span class="pl-s"><span class="pl-pds">"</span>\t<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">'</span>BEGIN{OFS=""} {if(NR==1)next; skill=$20; gsub("~~", "~", skill); skill=(skill=="")?".":($3"__"skill); print 2-$14,$2,$3"__"$4,skill;}<span class="pl-pds">'</span></span> algebra_2008_2009_train.txt <span class="pl-k">&gt;</span> a89_kts_train.txt</pre></div>
 
@@ -203,7 +208,7 @@ B   0.79000000  0.21000000  0.22000000  0.78000000
 <a id="references" class="anchor" href="#references" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>References</h1>
 
 <ol>
-<li><p>Corbett, A. T. and Anderson, J. R.: Knowledge tracing: Modeling the acquisition of procedural knowledge. User Modeling and User-Adapted Interaction, 4(4), 253-278. (1995)</p></li>
+<li><p>Corbett, A. T., and Anderson, J. R.: Knowledge tracing: Modeling the acquisition of procedural knowledge. User Modeling and User-Adapted Interaction, 4(4), 253-278. (1995)</p></li>
 <li><p>Levinson, S. E., Rabiner, L. R., and Sondhi, M. M.: An Introduction to the Application of the Theory of Probabilistic Functions of a Markov Process to Automatic Speech Recognition. Bell System Technical Journal, 62(4): 1035-1074. (1983)</p></li>
 <li><p>Wolfe conditions. (2016, January 20). In <em>Wikipedia, The Free Encyclopedia</em>. <a href="http://en.wikipedia.org/wiki/Wolfe_conditions">http://en.wikipedia.org/wiki/Wolfe_conditions</a></p></li>
 <li><p>Nonlinear conjugate gradient method. (2016, February 22). In <em>Wikipedia, The Free Encyclopedia</em>. <a href="http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method">http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method</a></p></li>
@@ -212,11 +217,11 @@ B   0.79000000  0.21000000  0.22000000  0.78000000
 <h1>
 <a id="contact-us" class="anchor" href="#contact-us" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contact Us</h1>
 
-<p>If you have any questions, comments, propositions, feel free to contact me at
-<a href="mailto:myudelson@gmail.com">myudelson@gmail.com</a></p>
+<p>If you have any questions, comments, propositions, feel free to contact me at <a href="mailto:myudelson@gmail.com">myudelson@gmail.com</a>.</p>
 
-<p>Have fun fitting BKT models,
-Michael (Mikhail) Yudelson</p>
+<p>Have fun fitting BKT models,</p>
+
+<p>Michael (Mikhail) Yudelson</p>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/IEDMS/standard-bkt">Standard Bayesian Knowledge Tracing Models</a> is maintained by <a href="https://github.com/IEDMS">IEDMS</a>.</span>
