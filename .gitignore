@@ -3,5 +3,6 @@ inputconvert
 trainhmm
 predicthmm
 boost/**/*
+boost.zip
 papers/*
 d/**/*
