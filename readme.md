@@ -16,8 +16,15 @@ For each skill BKT has four parameters.
 
 Parameters of the BKT can be represented in the matrix form. Priors -- ![\pi](http://latex.codecogs.com/gif.latex?%5Cpi) -- are a vector 1\*N, where N is the number of states. Throughout this discussion, we will we assume that the first element of the ![\pi](http://latex.codecogs.com/gif.latex?%5Cpi) vector is the a priory probability of knowing the skill. pLearn is part of the transitions matrix A that captures probabilities of state changes from row to column and is N\*N. No forgetting is captured by setting A[1,2] = 0 (from mastered to unmastered). pLearn corresponds to A[2,1] - from unmastered to mastered. pGuess and pSlip are specified in B -- observation matrix N\*M, where M is the number of observations. First column corresponds to correct observation, second -- incorrect. For two observations, typical for BKT, pGuess is B[2,1] -- unmastered skill but a correct response, and pSlip is B[1,2] - mastered skill but incorrect response. 
 
-![\pi](http://latex.codecogs.com/gif.latex?%5Cpi)
     
+![\Pi=\[p(L_0), 1-p(L_0)\]](http://latex.codecogs.com/gif.latex?%5CPi%3D%0D%0A%5Cbegin%7Bbmatrix%7D%0D%0Ap%28L_0%29%261-p%28L_0%29%5C%5C%0D%0A%5Cend%7Bbmatrix%7D)
+
+![A=\[1, 0; p(T), 1-p(T)\]](http://latex.codecogs.com/gif.latex?A%3D%0D%0A%5Cbegin%7Bbmatrix%7D%0D%0A1%260%5C%5C%0D%0Ap%28T%29%261-p%28T%29%0D%0A%5Cend%7Bbmatrix%7D)
+
+![B=\[1-p(S), p(S); p(G), 1-p(G)\]](http://latex.codecogs.com/gif.latex?B%3D%0D%0A%5Cbegin%7Bbmatrix%7D%0D%0A1-p%28S%29%26p%28S%29%5C%5C%0D%0Ap%28G%29%261-p%28G%29%0D%0A%5Cend%7Bbmatrix%7D)
+
+
+![\pi](http://latex.codecogs.com/gif.latex?%5Cpi)
 
  pLo | 1-pLo 
 -----|-------    
@@ -28,12 +35,12 @@ A
 -----|-------    
 | pT | 1-pT |
 
+
 B
 
 | 1-pS|   pS |
 ------|-------    
 |  pG | 1-pG |
-
 
 For more details on BKT refer to [1]. [2], among other things, discusses how a gradient-based fitting of HMM can be implemented. [3, 4] cover additional topics relevant for the implementation.
 
