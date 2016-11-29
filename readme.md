@@ -30,7 +30,7 @@ For more details on BKT refer to [1]. [2], among other things, discusses how a g
 
 A public version of the standard BKT code is available via International Educational Data Mining Society GitHub [repository](http://goo.gl/5DqpkW). If you have `git` utility installed, use the following command to get the source code.
 
-```sh
+```bash
 git clone https://github.com/IEDMS/standard-bkt
 ```
 
@@ -162,7 +162,7 @@ Small sample data file <toy_data.txt> is generated using the following BKT param
 
 To fit a BKT model of this data using an EM algorithm run the following command:
 
-```sh
+```bash
 ./trainhmm -s 1.1 -m 1 -p 1 toy_data.txt model.txt predict.txt
 ```
 
@@ -170,21 +170,21 @@ The model will have 90% accuracy and root mean squared error (RMSE) = 0.302691 a
 
 If we fit BKT model using Gradient Descent method using `-s 1.2` argument, the recovered parameters would be: pLo=0.00041944, pT=0.17478539, pS=0.07938036, 0.03804388, the accuracy would remain at 90% while RMSE = 0.299250. Loglikelihood changes from  9.3763477 to 6.4099682 after 11 iterations.
 
-To generate predictions using a previously fit model run the following command  (do not forget that prediction will only be generated for rows where observation is not known – marked with `.`): 
+To generate predictions using a previously fit model run the following command: 
 
-```sh
+```bash
 ./predicthmm -p 1 toy_data_test.txt model.txt predict.txt
 ```
 
 To give this tool a proper test you might want to try it on a KDD Cup 2010 dataset donated to the Pittsburgh Science of Learning Center by Carnegie Learning Inc. The dataset can be downloaded (after a quick registration) from [here](http://pslcdatashop.web.cmu.edu/KDDCup/). This dataset consists of training and challenge sets. For the sake of testing the tool, download the challenge  Algebra I set that has about 9 million transactions of over 3300 students. The training file should be trimmed to the tool's format. See shell commands below that do that.
 
-```sh
+```bash
 gawk -F"\t" 'BEGIN{OFS=""} {if(NR==1)next; skill=$20; gsub("~~", "~", skill); skill=(skill=="")?".":($3"__"skill); print 2-$14,$2,$3"__"$4,skill;}' algebra_2008_2009_train.txt > a89_kts_train.txt
 ```
 
 To fit a BKT model of this dataset using gradient descent method as well as to compute fit metrics and the prediction run the following command:
 
-```sh
+```bash
 ./trainhmm -s 1.2 -d ~ -m 1 -p 1 a89_kts_train.txt model.txt predict.txt
 ```
 
