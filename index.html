@@ -192,7 +192,7 @@ B   0.79000000  0.21000000  0.22000000  0.78000000
 
 <p>If we fit BKT model using Gradient Descent method using <code>-s 1.2</code> argument, the recovered parameters would be: pLo=0.00041944, pT=0.17478539, pS=0.07938036, 0.03804388, the accuracy would remain at 90% while RMSE = 0.299250. Loglikelihood changes from  9.3763477 to 6.4099682 after 11 iterations.</p>
 
-<p>To generate predictions using a previously fit model run the following command  (do not forget that prediction will only be generated for rows where observation is not known – marked with <code>.</code>): </p>
+<p>To generate predictions using a previously fit model run the following command: </p>
 
 <div class="highlight highlight-source-shell"><pre>./predicthmm -p 1 toy_data_test.txt model.txt predict.txt</pre></div>
 
