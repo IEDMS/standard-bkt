@@ -1,6 +1,5 @@
-<style="color:red">
-Development moved to https://github.com/myudelson/hmm-scalable 
-</style>
+# Development moved to https://github.com/myudelson/hmm-scalable 
+
 
 # A Tool for fitting Hidden Markov Models models at scale
 
